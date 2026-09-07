@@ -6,6 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-store">
 <title>Joddy VIP Dresses</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:Tahoma,Arial;background:#f6f4f7;color:#231f26}.hidden{display:none!important}
 button,input,select,textarea{font:inherit}.btn{border:0;border-radius:10px;padding:10px 13px;cursor:pointer;background:#6f3a75;color:#fff;font-weight:700}.btn.alt{background:#736b75}.btn.light{background:#eee9ef;color:#332e35}.btn.danger{background:#b42318}
@@ -94,7 +95,13 @@ button,input,select,textarea{font:inherit}.btn{border:0;border-radius:10px;paddi
    <div class="card"><h3>سجل الحركات</h3><div id="auditTable"></div></div>
   </section>
 
+  <section id="alerts" class="section">
+   <div id="alertsStats" class="grid"></div>
+   <div class="card" style="margin-top:12px"><h3>التنبيهات وخطة العمل</h3><div id="alertsBody"></div></div>
+  </section>
+
   <section id="finance" class="section">
+   <div class="toolbar"><button id="exportFinanceBtn" class="btn alt">تصدير Excel للمالية</button></div>
    <div id="financeStats" class="grid"></div>
    <div class="tabs" style="margin-top:12px">
     <button data-tab="payments" class="tabactive">التحصيلات</button><button data-tab="expenses">المصروفات</button><button data-tab="dexp">مصروفات الفساتين</button><button data-tab="sales">المبيعات</button><button data-tab="cash">إقفال الخزينة</button>
@@ -133,12 +140,17 @@ function parseDMY(v){
 function dateOnlyIso(ymd){return ymd?new Date(ymd+'T12:00:00').toISOString():null}
 function addDaysYMD(ymd,days){const d=new Date(ymd+'T12:00:00');d.setDate(d.getDate()+Number(days||0));return d.toISOString().slice(0,10)}
 
-const labels={dashboard:'لوحة التحكم',calendar:'التقويم',dresses:'الفساتين',bookings:'الحجوزات والإيجارات',customers:'العملاء',preparation:'التنظيف والتجهيز',deposits:'التأمينات المستحقة',branches:'الفروع',finance:'المالية',reports:'التقارير',audit:'سجل الحركات'};
+const labels={dashboard:'لوحة التحكم',alerts:'التنبيهات',calendar:'التقويم',dresses:'الفساتين',bookings:'الحجوزات والإيجارات',customers:'العملاء',preparation:'التنظيف والتجهيز',deposits:'التأمينات المستحقة',branches:'الفروع',finance:'المالية',reports:'التقارير',audit:'سجل التغييرات'};
 const statusAr={available:'متاح',booked:'محجوز',rented:'مؤجر',preparation:'تجهيز',maintenance:'صيانة',sold:'مباع',inactive:'غير نشط',reserved:'محجوز',confirmed:'مؤكد',picked_up:'تم الاستلام',returned:'تم الإرجاع',cancelled:'ملغي',completed:'مكتمل',pending:'معلق',in_progress:'جاري',done:'تم',skipped:'متخطى'};
-let S={profile:null,branches:[],categories:[],dresses:[],customers:[],bookings:[],bookingDresses:[],prep:[],payments:[],expenses:[],dressExpenses:[],sales:[],transfers:[],measurements:[],alterations:[],cashClosings:[],audit:[]}; let calCursor=new Date();
+let S={profile:null,branches:[],categories:[],dresses:[],customers:[],bookings:[],bookingDresses:[],prep:[],payments:[],expenses:[],dressExpenses:[],sales:[],transfers:[],measurements:[],alterations:[],cashClosings:[],audit:[],userProfiles:[]}; let calCursor=new Date();
 
 function msg(el,t,e=false){el.innerHTML='<div class="msg '+(e?'err':'')+'">'+esc(t)+'</div>'}
-async function audit(action,table,id,details={}){try{await sb.from('audit_log').insert({action,table_name:table,record_id:String(id||''),details})}catch{}}
+async function audit(action,table,id,details={}){
+ try{
+   const {data:{user}}=await sb.auth.getUser();
+   await sb.from('audit_log').insert({user_id:user?.id||null,action,table_name:table,record_id:String(id||''),details});
+ }catch{}
+}
 function roleCanManage(){return S.profile&&S.profile.role!=='employee'}
 function branchName(id){return S.branches.find(x=>String(x.id)===String(id))?.name||'—'}
 function customerName(id){return S.customers.find(x=>x.id===id)?.full_name||'—'}
@@ -151,7 +163,7 @@ function showSection(id){document.querySelectorAll('.section').forEach(x=>x.clas
 async function login(){
  msg($('loginMsg'),'جاري الدخول...');
  let loginId=$('email').value.trim();
- const aliases={joddy1:'joddy1@joddy.local',vip1:'vip1@joddy.local'};
+ const aliases={joddy1:'joddy1@proton.me',vip1:'vip1@joddy.local'};
  const email=aliases[loginId]||loginId;
  const {error}=await sb.auth.signInWithPassword({email,password:$('password').value});
  if(error)return msg($('loginMsg'),'تعذر الدخول: اسم المستخدم أو كلمة المرور غير صحيحة',true);
@@ -175,13 +187,14 @@ async function refreshAll(){
   sb.from('customer_measurements').select('*').order('measured_at',{ascending:false}),
   sb.from('alterations').select('*').order('created_at',{ascending:false}),
   sb.from('cash_closings').select('*').order('closing_date',{ascending:false}),
-  sb.from('audit_log').select('*').order('created_at',{ascending:false}).limit(500)
+  sb.from('audit_log').select('*').order('created_at',{ascending:false}).limit(500),
+  sb.from('user_profiles').select('*')
  ];
  const r=await Promise.all(qs);
- ['branches','categories','dresses','customers','bookings','bookingDresses','prep','payments','expenses','dressExpenses','sales','transfers','measurements','alterations','cashClosings','audit'].forEach((k,i)=>S[k]=r[i].data||[]);
+ ['branches','categories','dresses','customers','bookings','bookingDresses','prep','payments','expenses','dressExpenses','sales','transfers','measurements','alterations','cashClosings','audit','userProfiles'].forEach((k,i)=>S[k]=r[i].data||[]);
  renderAll();
 }
-function renderAll(){renderDashboard();renderCalendar();renderDresses();renderCustomers();renderBookings();renderPrep();renderDeposits();renderBranches();renderFinance();renderReports();renderAudit()}
+function renderAll(){renderDashboard();renderAlerts();renderCalendar();renderDresses();renderCustomers();renderBookings();renderPrep();renderDeposits();renderBranches();renderFinance();renderReports();renderAudit()}
 function table(headers,rows){return `<div class="tablewrap"><table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows||`<tr><td colspan="${headers.length}">لا توجد بيانات</td></tr>`}</tbody></table></div>`}
 
 function renderDashboard(){
@@ -500,7 +513,42 @@ function alterationForm(bookingDressId){
  $('alf').onsubmit=async e=>{e.preventDefault();const due=$('alDue').value?parseDMY($('alDue').value):null;if($('alDue').value&&!due)return alert('اكتب التاريخ يوم/شهر/سنة');const charge=+$('alCharge').value||0,cost=+$('alCost').value||0;const r=await sb.from('alterations').insert({booking_dress_id:bookingDressId,description:$('alDesc').value.trim(),responsible_name:$('alResp').value.trim()||null,due_date:due,customer_charge:charge,internal_cost:cost,notes:$('alNotes').value.trim()||null}).select().single();if(r.error)return alert(r.error.message);const booking=S.bookings.find(b=>b.id===bd?.booking_id);if(booking&&charge>0)await sb.from('bookings').update({rental_total:Number(booking.rental_total||0)+charge,balance_amount:Number(booking.balance_amount||0)+charge}).eq('id',booking.id);if(cost>0&&bd)await sb.from('dress_expenses').insert({dress_id:bd.dress_id,branch_id:bd.pickup_branch_id,expense_type:'تعديلات وخياطة',amount:cost,notes:$('alDesc').value.trim()});closeModal();await refreshAll()}
 }
 window.alterationForm=alterationForm;
-function cancelBooking(id){openModal('إلغاء الحجز',`<form id="canf" class="forms"><div class="field full"><label>سبب الإلغاء</label><input id="canReason" required></div><div class="full"><button class="btn danger">تأكيد الإلغاء</button></div></form>`);$('canf').onsubmit=async e=>{e.preventDefault();const reason=$('canReason').value.trim();const r=await sb.from('bookings').update({status:'cancelled',cancellation_reason:reason}).eq('id',id);if(r.error)return alert(r.error.message);const ids=S.bookingDresses.filter(x=>x.booking_id===id).map(x=>x.dress_id);await sb.from('dresses').update({status:'available'}).in('id',ids);await audit('cancel','bookings',id,{reason});closeModal();await refreshAll()}}
+function cancelBooking(id){
+ const b=S.bookings.find(x=>x.id===id);if(!b)return;
+ openModal('إلغاء الحجز',`<form id="canf" class="forms">
+  <div class="card full">
+   <b>العميل:</b> ${esc(customerName(b.customer_id))} — <b>الإيصال:</b> ${b.receipt_no}<br>
+   <b>المدفوع:</b> ${money(b.paid_amount)} — <b>سيتم رد المبلغ المسجل للعميل وإلغاء كل العمليات التشغيلية المرتبطة بالحجز.</b>
+  </div>
+  <div class="field full"><label>سبب الإلغاء *</label><input id="canReason" required></div>
+  <div class="full"><button class="btn danger">تأكيد الإلغاء الكامل</button></div>
+ </form>`);
+ $('canf').onsubmit=async e=>{
+   e.preventDefault();
+   const reason=$('canReason').value.trim(),paid=Number(b.paid_amount||0);
+   const items=S.bookingDresses.filter(x=>x.booking_id===id),dressIds=items.map(x=>x.dress_id),itemIds=items.map(x=>x.id);
+
+   const br=await sb.from('bookings').update({
+     status:'cancelled',cancellation_reason:reason,balance_amount:0,paid_amount:0
+   }).eq('id',id);
+   if(br.error)return alert(br.error.message);
+
+   if(dressIds.length)await sb.from('dresses').update({status:'available'}).in('id',dressIds);
+   if(itemIds.length){
+     await sb.from('preparation_tasks').update({status:'skipped',notes:'تم إيقاف المرحلة بسبب إلغاء الحجز'}).in('booking_dress_id',itemIds).not('status','in','("done","skipped")');
+     await sb.from('alterations').update({status:'cancelled',notes:'تم إلغاء التعديل بسبب إلغاء الحجز'}).in('booking_dress_id',itemIds).neq('status','completed');
+   }
+   if(paid>0){
+     const pr=await sb.from('payments').insert({
+       booking_id:id,branch_id:b.booking_branch_id,amount:paid,payment_type:'deposit_refund',
+       payment_method:'رد حجز ملغي',notes:'رد كامل للمدفوع بسبب إلغاء الحجز: '+reason
+     });
+     if(pr.error)return alert('تم إلغاء الحجز، لكن تعذر تسجيل رد المبلغ في المالية: '+pr.error.message);
+   }
+   await audit('cancel_full','bookings',id,{receipt_no:b.receipt_no,reason,refund_amount:paid,dresses:dressIds,stopped_preparation:true,stopped_alterations:true});
+   closeModal();await refreshAll();
+ }
+}
 window.cancelBooking=cancelBooking;
 async function markNoShow(id){if(!confirm('تأكيد أن العميل لم يحضر؟'))return;const r=await sb.from('bookings').update({status:'cancelled',no_show:true,cancellation_reason:'No Show'}).eq('id',id);if(r.error)return alert(r.error.message);const ids=S.bookingDresses.filter(x=>x.booking_id===id).map(x=>x.dress_id);await sb.from('dresses').update({status:'available'}).in('id',ids);await audit('no_show','bookings',id);closeModal();await refreshAll()}
 window.markNoShow=markNoShow;
@@ -635,6 +683,56 @@ function renderBranches(){$('branchesTable').innerHTML=table(['الفرع','ال
 function newBranch(){openModal('إضافة فرع',`<form id="brf" class="forms"><div class="field wide"><label>اسم الفرع</label><input id="brName"></div><div><button class="btn">حفظ</button></div></form>`);$('brf').onsubmit=async e=>{e.preventDefault();const r=await sb.from('branches').insert({name:$('brName').value.trim()}).select().single();if(r.error)return alert(r.error.message);closeModal();await refreshAll()}}
 window.newBranch=newBranch;window.toggleBranch=async(id,v)=>{const r=await sb.from('branches').update({active:v}).eq('id',id);if(r.error)return alert(r.error.message);await refreshAll()}
 
+
+function renderAlerts(){
+ if(!$('alertsBody'))return;
+ const ymd=(off=0)=>{const d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()+off);return d.toISOString().slice(0,10)};
+ const today=ymd(0),tomorrow=ymd(1),after=ymd(2);
+ const overdue=S.bookings.filter(b=>!['returned','completed','cancelled'].includes(b.status)&&String(b.expected_return_at||'').slice(0,10)<today);
+ const dueToday=S.bookings.filter(b=>!['returned','completed','cancelled'].includes(b.status)&&String(b.expected_return_at||'').slice(0,10)===today);
+ const tomorrowRisk=S.bookings.filter(b=>!['returned','completed','cancelled'].includes(b.status)&&String(b.expected_return_at||'').slice(0,10)===tomorrow);
+ const lateAlt=S.alterations.filter(a=>!['completed','cancelled'].includes(a.status)&&a.due_date&&String(a.due_date).slice(0,10)<today);
+ const pendingPrep=S.prep.filter(p=>!['done','skipped'].includes(p.status));
+ const depDue=S.bookings.filter(b=>['returned','completed'].includes(b.status)&&Math.max(0,Number(b.deposit_total||0)-Number(b.deposit_damage_deduction||0)-Number(b.deposit_refunded||0))>0);
+
+ $('alertsStats').innerHTML=[
+   ['مرتجعات متأخرة',overdue.length],['مستحق رجوع اليوم',dueToday.length],['قد يتأخر غدًا',tomorrowRisk.length],
+   ['تجهيزات مفتوحة',pendingPrep.length],['تعديلات متأخرة',lateAlt.length],['تأمينات واجبة الرد',depDue.length]
+ ].map(x=>`<div class="card stat"><small>${x[0]}</small><strong>${x[1]}</strong></div>`).join('');
+
+ const workRows=[];
+ S.bookings.filter(b=>b.status!=='cancelled').forEach(b=>{
+   const c=customerName(b.customer_id);
+   if(String(b.fitting_at||'').slice(0,10)===today)workRows.push(['اليوم','بروفة',c,b.receipt_no,formatDMY(b.fitting_at)]);
+   if(String(b.pickup_at||'').slice(0,10)===today)workRows.push(['اليوم','استلام فستان',c,b.receipt_no,formatDMY(b.pickup_at)]);
+   if(String(b.expected_return_at||'').slice(0,10)===today)workRows.push(['اليوم','رجوع فستان',c,b.receipt_no,formatDMY(b.expected_return_at)]);
+   if(String(b.event_date||'').slice(0,10)===today)workRows.push(['اليوم','مناسبة',c,b.receipt_no,formatDMY(b.event_date)]);
+   if(String(b.fitting_at||'').slice(0,10)===tomorrow)workRows.push(['غدًا','بروفة',c,b.receipt_no,formatDMY(b.fitting_at)]);
+   if(String(b.pickup_at||'').slice(0,10)===tomorrow)workRows.push(['غدًا','استلام فستان',c,b.receipt_no,formatDMY(b.pickup_at)]);
+   if(String(b.expected_return_at||'').slice(0,10)===tomorrow)workRows.push(['غدًا','رجوع فستان',c,b.receipt_no,formatDMY(b.expected_return_at)]);
+ });
+
+ const tomorrowPrep=[];
+ pendingPrep.forEach(p=>{
+   const bd=S.bookingDresses.find(x=>x.id===p.booking_dress_id),b=S.bookings.find(x=>x.id===bd?.booking_id);
+   if(!bd||!b)return;
+   const pickup=String(b.pickup_at||'').slice(0,10);
+   if(pickup===tomorrow||pickup===after)tomorrowPrep.push([dressName(bd.dress_id),b.receipt_no,String(p.stage_name||'').replace(/^بروفة:\s*/,'').replace(/^رجوع:\s*/,''),statusAr[p.status]||p.status,formatDMY(b.pickup_at)]);
+ });
+
+ $('alertsBody').innerHTML=`
+  ${overdue.length?`<div class="msg err"><b>مرتجعات متأخرة:</b> ${overdue.map(b=>`${esc(customerName(b.customer_id))} / #${b.receipt_no} / ${formatDMY(b.expected_return_at)}`).join(' — ')}</div>`:''}
+  ${dueToday.length?`<div class="msg"><b>يجب رجوعها اليوم:</b> ${dueToday.map(b=>`${esc(customerName(b.customer_id))} / #${b.receipt_no}`).join(' — ')}</div>`:''}
+  ${tomorrowRisk.length?`<div class="msg"><b>موعد رجوعها غدًا:</b> ${tomorrowRisk.map(b=>`${esc(customerName(b.customer_id))} / #${b.receipt_no}`).join(' — ')}</div>`:''}
+  <h4>خطة العمل اليوم وغدًا</h4>
+  ${table(['اليوم','العمل','العميل','الحجز','التاريخ'],workRows.map(r=>`<tr>${r.map(x=>`<td>${esc(x)}</td>`).join('')}</tr>`).join(''))}
+  <h4>تجهيزات الغد وبعد الغد</h4>
+  ${table(['الفستان','الحجز','المرحلة','الحالة','موعد الاستلام'],tomorrowPrep.map(r=>`<tr>${r.map(x=>`<td>${esc(x)}</td>`).join('')}</tr>`).join(''))}
+  <h4>تعديلات متأخرة</h4>
+  ${table(['الفستان','المطلوب','المسؤول','موعد التسليم'],lateAlt.map(a=>{const bd=S.bookingDresses.find(x=>x.id===a.booking_dress_id);return `<tr><td>${esc(dressName(bd?.dress_id))}</td><td>${esc(a.description)}</td><td>${esc(a.responsible_name||'')}</td><td>${formatDMY(a.due_date)}</td></tr>`}).join(''))}
+ `;
+}
+
 function renderCalendar(){
  if(!$('calendarGrid'))return;const y=calCursor.getFullYear(),m=calCursor.getMonth();$('calTitle').textContent=new Intl.DateTimeFormat('ar-EG',{month:'long',year:'numeric'}).format(calCursor);
  const first=new Date(y,m,1),days=new Date(y,m+1,0).getDate(),offset=(first.getDay()+1)%7;let cells='';const heads=['السبت','الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة'];
@@ -648,7 +746,21 @@ function renderReports(){
  const rows=S.dresses.map(d=>{const bds=S.bookingDresses.filter(x=>x.dress_id===d.id),rev=bds.reduce((a,x)=>a+Number(x.rental_price||0),0),dx=S.dressExpenses.filter(x=>x.dress_id===d.id).reduce((a,x)=>a+Number(x.amount||0),0);return {d,count:bds.length,rev,dx,net:rev-dx}}).sort((a,b)=>b.rev-a.rev);
  $('reportsBody').innerHTML=table(['الفستان','عدد الحجوزات','إيراد الإيجار','مصروفات الفستان','الصافي'],rows.map(x=>`<tr><td>${esc(x.d.dress_code)} — ${esc(x.d.name||'')}</td><td>${x.count}</td><td>${money(x.rev)}</td><td>${money(x.dx)}</td><td><b>${money(x.net)}</b></td></tr>`).join(''));
 }
-function renderAudit(){if(!$('auditTable'))return;$('auditTable').innerHTML=table(['التاريخ','المستخدم','الحركة','الجدول','السجل','التفاصيل'],S.audit.map(a=>`<tr><td>${new Date(a.created_at).toLocaleString('ar-EG')}</td><td>${esc(a.user_id||'')}</td><td>${esc(a.action)}</td><td>${esc(a.table_name||'')}</td><td>${esc(a.record_id||'')}</td><td>${esc(JSON.stringify(a.details||{}))}</td></tr>`).join(''))}
+function renderAudit(){
+ if(!$('auditTable'))return;
+ const userName=id=>S.userProfiles.find(x=>x.user_id===id)?.full_name||id||'غير معروف';
+ const actionAr=a=>({insert:'إضافة',update:'تعديل',delete:'حذف',cancel:'إلغاء',cancel_full:'إلغاء كامل',status:'تغيير حالة',return:'رجوع فستان',reschedule:'إعادة جدولة',no_show:'عدم حضور',delay_fee:'غرامة تأخير',fitting_prep:'بدء تجهيز بعد بروفة',return_prep:'بدء تنظيف بعد رجوع'}[a]||a);
+ const detailText=d=>{
+   if(!d)return '—';
+   if(d.reason)return `السبب: ${d.reason}${d.refund_amount!==undefined?' — المردود: '+money(d.refund_amount):''}`;
+   if(d.status)return `الحالة الجديدة: ${statusAr[d.status]||d.status}`;
+   if(d.fee!==undefined)return `غرامة: ${money(d.fee)}${d.note?' — '+d.note:''}`;
+   if(d.receipt_no)return `حجز رقم ${d.receipt_no}${d.paid_amount!==undefined?' — مدفوع '+money(d.paid_amount):''}`;
+   const s=JSON.stringify(d);return s.length>180?s.slice(0,180)+'…':s;
+ };
+ $('auditTable').innerHTML=table(['التاريخ والوقت','المستخدم','ماذا فعل','القسم','السجل','التفاصيل'],
+ S.audit.map(a=>`<tr><td>${new Date(a.created_at).toLocaleString('ar-EG')}</td><td><b>${esc(userName(a.user_id))}</b></td><td>${esc(actionAr(a.action))}</td><td>${esc(a.table_name||'')}</td><td>${esc(a.record_id||'')}</td><td>${esc(detailText(a.details))}</td></tr>`).join(''));
+}
 function closingForm(){openModal('إقفال يومية الفرع',`<form id="clf" class="forms"><div class="field"><label>الفرع</label><select id="clBranch">${S.branches.filter(x=>x.active).map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('')}</select></div><div class="field"><label>الرصيد الافتتاحي</label><input id="clOpen" type="number" value="0"></div><div class="field"><label>المتوقع بالخزينة</label><input id="clExpected" type="number" value="0"></div><div class="field"><label>المعدود فعليًا</label><input id="clCounted" type="number" value="0"></div><div class="field wide"><label>ملاحظات</label><input id="clNotes"></div><div class="full"><button class="btn">إقفال اليومية</button></div></form>`);$('clf').onsubmit=async e=>{e.preventDefault();const {data:{user}}=await sb.auth.getUser();const r=await sb.from('cash_closings').upsert({branch_id:+$('clBranch').value,closing_date:new Date().toISOString().slice(0,10),opening_balance:+$('clOpen').value||0,expected_cash:+$('clExpected').value||0,counted_cash:+$('clCounted').value||0,notes:$('clNotes').value.trim()||null,closed_by:user?.id},{onConflict:'branch_id,closing_date'}).select().single();if(r.error)return alert(r.error.message);closeModal();await refreshAll()}}
 window.closingForm=closingForm;
 
@@ -656,7 +768,7 @@ function renderFinance(){
  const income=S.payments.filter(x=>x.payment_type!=='deposit_refund').reduce((a,x)=>a+Number(x.amount||0),0),refund=S.payments.filter(x=>x.payment_type==='deposit_refund').reduce((a,x)=>a+Number(x.amount||0),0),exp=S.expenses.reduce((a,x)=>a+Number(x.amount||0),0),dexp=S.dressExpenses.reduce((a,x)=>a+Number(x.amount||0),0),sales=S.sales.reduce((a,x)=>a+Number(x.sale_amount||0),0);
  const netCash=income+sales-refund-exp-dexp;
  $('financeStats').innerHTML=[['التحصيلات',money(income)],['رد التأمينات',money(refund)],['مصروفات عامة',money(exp)],['مصروفات فساتين',money(dexp)],['المبيعات',money(sales)],['صافي الحركة المالية',money(netCash)]].map(x=>`<div class="card stat"><small>${x[0]}</small><strong>${x[1]}</strong></div>`).join('');
- $('paymentsTable').innerHTML=table(['التاريخ','الفرع','النوع','القيمة','طريقة الدفع','الحجز'],S.payments.map(x=>`<tr><td>${new Date(x.paid_at).toLocaleString('ar-EG')}</td><td>${esc(branchName(x.branch_id))}</td><td>${esc({rental:'تحصيل إيجار/حجز',deposit:'تحصيل تأمين',deposit_refund:'رد تأمين للعميل',damage_deduction:'خصم من التأمين',sale:'بيع',other:'أخرى'}[x.payment_type]||x.payment_type)}</td><td>${money(x.amount)}</td><td>${esc(x.payment_method||'')}</td><td>${esc(S.bookings.find(b=>b.id===x.booking_id)?.receipt_no||'')}</td></tr>`).join(''));
+ $('paymentsTable').innerHTML=table(['التاريخ','الفرع','النوع','القيمة','طريقة الدفع','الحجز'],S.payments.map(x=>`<tr><td>${new Date(x.paid_at).toLocaleString('ar-EG')}</td><td>${esc(branchName(x.branch_id))}</td><td>${esc(x.payment_type==='deposit_refund'&&String(x.payment_method||'').includes('حجز ملغي')?'رد حجز ملغي':({rental:'تحصيل إيجار/حجز',deposit:'تحصيل تأمين',deposit_refund:'رد تأمين للعميل',damage_deduction:'خصم من التأمين',sale:'بيع',other:'أخرى'}[x.payment_type]||x.payment_type))}</td><td>${money(x.amount)}</td><td>${esc(x.payment_method||'')}</td><td>${esc(S.bookings.find(b=>b.id===x.booking_id)?.receipt_no||'')}</td></tr>`).join(''));
  $('expensesTable').innerHTML=table(['التاريخ','الفرع','البند','القيمة','البيان'],S.expenses.map(x=>`<tr><td>${x.expense_date}</td><td>${esc(branchName(x.branch_id))}</td><td>${esc(x.category)}</td><td>${money(x.amount)}</td><td>${esc(x.description||'')}</td></tr>`).join(''));
  $('dressExpensesTable').innerHTML=table(['التاريخ','الفستان','الفرع','النوع','القيمة','ملاحظات'],S.dressExpenses.map(x=>`<tr><td>${x.expense_date}</td><td>${esc(dressName(x.dress_id))}</td><td>${esc(branchName(x.branch_id))}</td><td>${esc(x.expense_type)}</td><td>${money(x.amount)}</td><td>${esc(x.notes||'')}</td></tr>`).join(''));
  $('salesTable').innerHTML=table(['التاريخ','الفستان','العميل','الفرع','قيمة البيع','المدفوع'],S.sales.map(x=>`<tr><td>${new Date(x.sold_at).toLocaleString('ar-EG')}</td><td>${esc(dressName(x.dress_id))}</td><td>${esc(customerName(x.customer_id))}</td><td>${esc(branchName(x.branch_id))}</td><td>${money(x.sale_amount)}</td><td>${money(x.paid_amount)}</td></tr>`).join(''));
@@ -671,11 +783,53 @@ window.dressExpenseForm=dressExpenseForm;
 function saleForm(){openModal('بيع فستان',`<form id="sf" class="forms"><div class="field"><label>الفستان</label><select id="sfDress">${S.dresses.filter(x=>x.status!=='sold').map(x=>`<option value="${x.id}">${esc(x.dress_code)} - ${esc(x.name||'')}</option>`).join('')}</select></div><div class="field"><label>العميل</label><select id="sfCust"><option value="">بدون</option>${S.customers.map(x=>`<option value="${x.id}">${esc(x.full_name)}</option>`).join('')}</select></div><div class="field"><label>الفرع</label><select id="sfBranch">${S.branches.filter(x=>x.active).map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('')}</select></div><div class="field"><label>قيمة البيع</label><input id="sfAmt" type="number"></div><div class="field"><label>المدفوع</label><input id="sfPaid" type="number"></div><div class="field"><label>ملاحظات</label><input id="sfNotes"></div><div class="full"><button class="btn">حفظ</button></div></form>`);$('sf').onsubmit=async e=>{e.preventDefault();const dress_id=$('sfDress').value,r=await sb.from('sales').insert({dress_id,customer_id:$('sfCust').value||null,branch_id:+$('sfBranch').value,sale_amount:+$('sfAmt').value,paid_amount:+$('sfPaid').value||0,notes:$('sfNotes').value.trim()||null}).select().single();if(r.error)return alert(r.error.message);await sb.from('dresses').update({status:'sold'}).eq('id',dress_id);closeModal();await refreshAll()}}
 window.saleForm=saleForm;
 
+
+function exportFinanceExcel(){
+ if(typeof XLSX==='undefined')return alert('تعذر تحميل مكتبة Excel. تأكد من اتصال الإنترنت ثم حاول مرة أخرى.');
+ const wb=XLSX.utils.book_new();
+ const aoa=(headers,rows)=>XLSX.utils.aoa_to_sheet([headers,...rows]);
+
+ const income=S.payments.filter(x=>!['deposit_refund'].includes(x.payment_type)).reduce((a,x)=>a+Number(x.amount||0),0);
+ const refunds=S.payments.filter(x=>x.payment_type==='deposit_refund').reduce((a,x)=>a+Number(x.amount||0),0);
+ const exp=S.expenses.reduce((a,x)=>a+Number(x.amount||0),0);
+ const dexp=S.dressExpenses.reduce((a,x)=>a+Number(x.amount||0),0);
+ const sales=S.sales.reduce((a,x)=>a+Number(x.paid_amount||0),0);
+ XLSX.utils.book_append_sheet(wb,aoa(['البيان','القيمة'],[
+   ['التحصيلات',income],['ردود العملاء/التأمينات',refunds],['المصروفات العامة',exp],['مصروفات الفساتين',dexp],['المبيعات المحصلة',sales],['صافي الحركة',income+sales-refunds-exp-dexp]
+ ]),'ملخص المالية');
+
+ XLSX.utils.book_append_sheet(wb,aoa(['التاريخ','الحجز','الفرع','النوع','المبلغ','الطريقة','ملاحظات'],
+ S.payments.map(x=>[formatDMY(x.paid_at),S.bookings.find(b=>b.id===x.booking_id)?.receipt_no||'',branchName(x.branch_id),x.payment_type,x.amount,x.payment_method||'',x.notes||''])),'التحصيلات');
+
+ XLSX.utils.book_append_sheet(wb,aoa(['التاريخ','الفرع','التصنيف','المبلغ','البيان'],
+ S.expenses.map(x=>[formatDMY(x.expense_date),branchName(x.branch_id),x.category,x.amount,x.description||''])),'المصروفات');
+
+ XLSX.utils.book_append_sheet(wb,aoa(['التاريخ','الفستان','الفرع','النوع','المبلغ','ملاحظات'],
+ S.dressExpenses.map(x=>[formatDMY(x.expense_date),dressName(x.dress_id),branchName(x.branch_id),x.expense_type,x.amount,x.notes||''])),'مصروفات الفساتين');
+
+ XLSX.utils.book_append_sheet(wb,aoa(['التاريخ','الفستان','العميل','الفرع','قيمة البيع','المدفوع','ملاحظات'],
+ S.sales.map(x=>[formatDMY(x.sold_at),dressName(x.dress_id),customerName(x.customer_id),branchName(x.branch_id),x.sale_amount,x.paid_amount,x.notes||''])),'المبيعات');
+
+ XLSX.utils.book_append_sheet(wb,aoa(['التاريخ','الفرع','افتتاحي','متوقع','فعلي','الفرق','ملاحظات'],
+ S.cashClosings.map(x=>[formatDMY(x.closing_date),branchName(x.branch_id),x.opening_balance,x.expected_cash,x.counted_cash,x.variance,x.notes||''])),'إقفال الخزينة');
+
+ const deps=[];
+ S.bookings.filter(b=>b.status!=='cancelled').forEach(b=>{
+   const due=Math.max(0,Number(b.deposit_total||0)-Number(b.deposit_damage_deduction||0)-Number(b.deposit_refunded||0));
+   if(due>0)deps.push([b.receipt_no,customerName(b.customer_id),S.bookingDresses.filter(x=>x.booking_id===b.id).map(x=>dressName(x.dress_id)).join(' / '),b.deposit_total,b.deposit_damage_deduction,b.deposit_refunded,due,formatDMY(b.actual_return_at||b.expected_return_at)]);
+ });
+ XLSX.utils.book_append_sheet(wb,aoa(['الحجز','العميل','الفستان','التأمين','الخصم','تم رده','المتبقي','موعد الاستحقاق'],deps),'التأمينات المستحقة');
+
+ XLSX.writeFile(wb,`Joddy_Finance_${new Date().toISOString().slice(0,10)}.xlsx`);
+ audit('export','finance','excel',{sheets:7});
+}
+window.exportFinanceExcel=exportFinanceExcel;
+
 function globalSearch(q){q=String(q||'').trim().toLowerCase();if(q.length<2)return;const results=[];S.customers.forEach(c=>{if([c.full_name,c.mobile,c.national_id].join(' ').toLowerCase().includes(q))results.push({type:'عميل',title:c.full_name,sub:c.mobile||'',action:`customerProfile('${c.id}')`})});S.dresses.forEach(d=>{if([d.dress_code,d.name,d.color,d.size].join(' ').toLowerCase().includes(q))results.push({type:'فستان',title:d.dress_code+' '+(d.name||''),sub:statusAr[d.status]||d.status,action:`dressProfile('${d.id}')`})});S.bookings.forEach(b=>{if(String(b.receipt_no).includes(q))results.push({type:'حجز',title:'إيصال '+b.receipt_no,sub:customerName(b.customer_id),action:`bookingDetails('${b.id}')`})});openModal('نتائج البحث',results.length?results.slice(0,30).map(r=>`<div class="card" style="margin:7px 0"><b>${esc(r.type)}: ${esc(r.title)}</b><div class="muted">${esc(r.sub)}</div><button class="btn light" onclick="${r.action}">فتح</button></div>`).join(''):'<div class="msg">لا توجد نتائج</div>')}
 window.globalSearch=globalSearch;
 
 $('loginBtn').onclick=login;$('password').addEventListener('keydown',e=>{if(e.key==='Enter')login()});$('logoutBtn').onclick=async()=>{await sb.auth.signOut();location.reload()};$('refreshBtn').onclick=refreshAll;
-$('newDressBtn').onclick=()=>dressForm();$('newCustomerBtn').onclick=()=>customerForm();$('newBookingBtn').onclick=newBooking;$('newBranchBtn').onclick=newBranch;$('newExpenseBtn').onclick=expenseForm;$('newDressExpenseBtn').onclick=dressExpenseForm;$('newSaleBtn').onclick=saleForm;$('newClosingBtn').onclick=closingForm;
+$('exportFinanceBtn').onclick=exportFinanceExcel;$('newDressBtn').onclick=()=>dressForm();$('newCustomerBtn').onclick=()=>customerForm();$('newBookingBtn').onclick=newBooking;$('newBranchBtn').onclick=newBranch;$('newExpenseBtn').onclick=expenseForm;$('newDressExpenseBtn').onclick=dressExpenseForm;$('newSaleBtn').onclick=saleForm;$('newClosingBtn').onclick=closingForm;
 $('dressSearch').oninput=renderDresses;$('dressFilter').onchange=renderDresses;$('globalSearch').addEventListener('keydown',e=>{if(e.key==='Enter')globalSearch(e.target.value)});$('calPrev').onclick=()=>{calCursor=new Date(calCursor.getFullYear(),calCursor.getMonth()-1,1);renderCalendar()};$('calNext').onclick=()=>{calCursor=new Date(calCursor.getFullYear(),calCursor.getMonth()+1,1);renderCalendar()};
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('tabactive'));b.classList.add('tabactive');document.querySelectorAll('.tabpane').forEach(x=>x.classList.remove('active'));$(b.dataset.tab).classList.add('active')});
 sb.auth.getSession().then(({data})=>data.session?start():null);
