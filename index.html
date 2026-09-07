@@ -65,7 +65,15 @@ button,input,select,textarea{font:inherit}.btn{border:0;border-radius:10px;paddi
   </section>
 
   <section id="preparation" class="section">
-   <div class="card"><div id="prepTable"></div></div>
+   <div class="card">
+    <h3>التنظيف والتجهيز</h3>
+    <div id="prepNav" class="tabs"></div>
+    <div id="prepTable"></div>
+   </div>
+  </section>
+
+  <section id="deposits" class="section">
+   <div class="card"><h3>التأمينات المستحقة للعملاء</h3><div id="depositSummary" class="msg"></div><div id="depositsTable"></div></div>
   </section>
 
   <section id="branches" class="section">
@@ -78,7 +86,7 @@ button,input,select,textarea{font:inherit}.btn{border:0;border-radius:10px;paddi
    <div class="tabs" style="margin-top:12px">
     <button data-tab="payments" class="tabactive">التحصيلات</button><button data-tab="expenses">المصروفات</button><button data-tab="dexp">مصروفات الفساتين</button><button data-tab="sales">المبيعات</button>
    </div>
-   <div id="payments" class="tabpane active card"><div class="toolbar"><button id="newPaymentBtn" class="btn">+ تسجيل تحصيل</button></div><div id="paymentsTable"></div></div>
+   <div id="payments" class="tabpane active card"><div class="msg">التحصيلات تظهر تلقائيًا من الحجوزات والإيجارات، ولا يتم إدخالها مرة ثانية من هنا.</div><div id="paymentsTable"></div></div>
    <div id="expenses" class="tabpane card"><div class="toolbar"><button id="newExpenseBtn" class="btn">+ مصروف عام</button></div><div id="expensesTable"></div></div>
    <div id="dexp" class="tabpane card"><div class="toolbar"><button id="newDressExpenseBtn" class="btn">+ مصروف فستان</button></div><div id="dressExpensesTable"></div></div>
    <div id="sales" class="tabpane card"><div class="toolbar"><button id="newSaleBtn" class="btn">+ بيع فستان</button></div><div id="salesTable"></div></div>
@@ -111,7 +119,7 @@ function parseDMY(v){
 function dateOnlyIso(ymd){return ymd?new Date(ymd+'T12:00:00').toISOString():null}
 function addDaysYMD(ymd,days){const d=new Date(ymd+'T12:00:00');d.setDate(d.getDate()+Number(days||0));return d.toISOString().slice(0,10)}
 
-const labels={dashboard:'لوحة التحكم',dresses:'الفساتين',bookings:'الحجوزات والإيجارات',customers:'العملاء',preparation:'التنظيف والتجهيز',branches:'الفروع',finance:'المالية'};
+const labels={dashboard:'لوحة التحكم',dresses:'الفساتين',bookings:'الحجوزات والإيجارات',customers:'العملاء',preparation:'التنظيف والتجهيز',deposits:'التأمينات المستحقة',branches:'الفروع',finance:'المالية'};
 const statusAr={available:'متاح',booked:'محجوز',rented:'مؤجر',preparation:'تجهيز',maintenance:'صيانة',sold:'مباع',inactive:'غير نشط',reserved:'محجوز',confirmed:'مؤكد',picked_up:'تم الاستلام',returned:'تم الإرجاع',cancelled:'ملغي',completed:'مكتمل',pending:'معلق',in_progress:'جاري',done:'تم',skipped:'متخطى'};
 let S={profile:null,branches:[],categories:[],dresses:[],customers:[],bookings:[],bookingDresses:[],prep:[],payments:[],expenses:[],dressExpenses:[],sales:[],transfers:[]};
 
@@ -146,16 +154,30 @@ async function refreshAll(){
  const r=await Promise.all(qs);['branches','categories','dresses','customers','bookings','bookingDresses','prep','payments','expenses','dressExpenses','sales','transfers'].forEach((k,i)=>S[k]=r[i].data||[]);
  renderAll();
 }
-function renderAll(){renderDashboard();renderDresses();renderCustomers();renderBookings();renderPrep();renderBranches();renderFinance()}
+function renderAll(){renderDashboard();renderDresses();renderCustomers();renderBookings();renderPrep();renderDeposits();renderBranches();renderFinance()}
 function table(headers,rows){return `<div class="tablewrap"><table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows||`<tr><td colspan="${headers.length}">لا توجد بيانات</td></tr>`}</tbody></table></div>`}
 
 function renderDashboard(){
- const today=new Date().toISOString().slice(0,10),available=S.dresses.filter(x=>x.status==='available').length,pending=S.prep.filter(x=>!['done','skipped'].includes(x.status)).length;
- const inPay=S.payments.filter(x=>x.payment_type!=='deposit_refund').reduce((a,x)=>a+Number(x.amount||0),0),out=S.expenses.reduce((a,x)=>a+Number(x.amount||0),0)+S.dressExpenses.reduce((a,x)=>a+Number(x.amount||0),0);
- const stats=[['إجمالي الفساتين',S.dresses.length],['متاح',available],['الحجوزات',S.bookings.length],['العملاء',S.customers.length],['مهام تجهيز',pending],['التحصيلات',money(inPay)],['المصروفات',money(out)],['الفروع',S.branches.length]];
+ const dateYMD=(offset=0)=>{const d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()+offset);return d.toISOString().slice(0,10)};
+ const today=dateYMD(0),tomorrow=dateYMD(1),after=dateYMD(2);
+ const available=S.dresses.filter(x=>x.status==='available').length,pending=S.prep.filter(x=>!['done','skipped'].includes(x.status)).length;
+ const inPay=S.payments.filter(x=>x.payment_type!=='deposit_refund').reduce((a,x)=>a+Number(x.amount||0),0);
+ const out=S.expenses.reduce((a,x)=>a+Number(x.amount||0),0)+S.dressExpenses.reduce((a,x)=>a+Number(x.amount||0),0);
+ const depositDue=S.bookings.filter(b=>b.status!=='cancelled').reduce((a,b)=>a+Math.max(0,Number(b.deposit_total||0)-Number(b.deposit_damage_deduction||0)-Number(b.deposit_refunded||0)),0);
+ const stats=[['إجمالي الفساتين',S.dresses.length],['متاح',available],['الحجوزات',S.bookings.length],['العملاء',S.customers.length],['مهام تجهيز',pending],['التحصيلات',money(inPay)],['المصروفات',money(out)],['تأمينات علينا للعملاء',money(depositDue)]];
  $('stats').innerHTML=stats.map(x=>`<div class="card stat"><small>${x[0]}</small><strong>${x[1]}</strong></div>`).join('');
- const todays=S.bookings.filter(x=>x.event_date===today).length,pickups=S.bookings.filter(x=>(x.pickup_at||'').slice(0,10)===today).length,returns=S.bookings.filter(x=>(x.expected_return_at||'').slice(0,10)===today).length;
- $('todaySummary').innerHTML=`مناسبات اليوم: <b>${todays}</b> — استلامات اليوم: <b>${pickups}</b> — مرتجعات اليوم: <b>${returns}</b> — تجهيز مفتوح: <b>${pending}</b>`;
+ function dayBlock(label,ymd){
+   const rows=[];
+   S.bookings.filter(b=>b.status!=='cancelled').forEach(b=>{
+     const c=customerName(b.customer_id);
+     if(String(b.event_date||'').slice(0,10)===ymd)rows.push(`مناسبة: ${c} — حجز ${b.receipt_no}`);
+     if(String(b.fitting_at||'').slice(0,10)===ymd)rows.push(`بروفة: ${c} — حجز ${b.receipt_no}`);
+     if(String(b.pickup_at||'').slice(0,10)===ymd)rows.push(`استلام: ${c} — حجز ${b.receipt_no}`);
+     if(String(b.expected_return_at||'').slice(0,10)===ymd)rows.push(`إرجاع: ${c} — حجز ${b.receipt_no}`);
+   });
+   return `<div class="card"><h4>${label} — ${formatDMY(ymd)}</h4>${rows.length?`<ul>${rows.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:'<div class="muted">لا توجد أعمال مسجلة</div>'}</div>`;
+ }
+ $('todaySummary').innerHTML=`<div class="forms">${dayBlock('اليوم',today)}${dayBlock('غدًا',tomorrow)}${dayBlock('بعد غد',after)}</div>`;
 }
 
 function renderDresses(){
@@ -164,22 +186,72 @@ function renderDresses(){
  $('dressesTable').innerHTML=table(['الكود','الوصف','الفرع','المقاس','اللون','الإيجار','التأمين','الحالة','إجراء'],arr.map(d=>`<tr><td><b>${esc(d.dress_code)}</b></td><td>${esc(d.name||'')}</td><td>${esc(branchName(d.current_branch_id))}</td><td>${esc(d.size||'')}</td><td>${esc(d.color||'')}</td><td>${money(d.default_rental_price)}</td><td>${money(d.default_deposit)}</td><td><span class="pill">${esc(statusAr[d.status]||d.status)}</span></td><td><div class="rowactions"><button class="btn light" onclick="dressForm('${d.id}')">تعديل</button><button class="btn light" onclick="transferDress('${d.id}')">نقل</button></div></td></tr>`).join(''));
 }
 function dressForm(id=''){
- const d=S.dresses.find(x=>x.id===id)||{},bo=S.branches.filter(x=>x.active).map(x=>`<option value="${x.id}" ${String(x.id)===String(d.current_branch_id)?'selected':''}>${esc(x.name)}</option>`).join(''),co=S.categories.filter(x=>x.active).map(x=>`<option value="${x.id}" ${String(x.id)===String(d.category_id)?'selected':''}>${esc(x.name)}</option>`).join('');
+ const d=S.dresses.find(x=>x.id===id)||{};
+ const roots=S.categories.filter(x=>x.active&&!x.parent_id);
+ const selectedCat=S.categories.find(x=>String(x.id)===String(d.category_id));
+ const selectedRoot=selectedCat?.parent_id?S.categories.find(x=>x.id===selectedCat.parent_id):selectedCat;
+ const bo=S.branches.filter(x=>x.active).map(x=>`<option value="${x.id}" ${String(x.id)===String(d.current_branch_id)?'selected':''}>${esc(x.name)}</option>`).join('');
  openModal(id?'تعديل فستان':'إضافة فستان',`<form id="dressForm" class="forms">
- <div class="field"><label>الكود *</label><input id="dfCode" value="${esc(d.dress_code||'')}" required></div><div class="field"><label>الوصف</label><input id="dfName" value="${esc(d.name||'')}"></div><div class="field"><label>التصنيف</label><select id="dfCat"><option value="">بدون</option>${co}</select></div>
- <div class="field"><label>الفرع *</label><select id="dfBranch">${bo}</select></div><div class="field"><label>المقاس</label><input id="dfSize" value="${esc(d.size||'')}"></div><div class="field"><label>اللون</label><input id="dfColor" value="${esc(d.color||'')}"></div>
- <div class="field"><label>سعر الشراء</label><input id="dfBuy" type="number" value="${d.purchase_price||0}"></div><div class="field"><label>تاريخ الشراء</label><input id="dfBuyDate" type="date" value="${d.purchase_date||''}"></div><div class="field"><label>المورد</label><input id="dfSupplier" value="${esc(d.supplier||'')}"></div>
- <div class="field"><label>الإيجار</label><input id="dfRent" type="number" value="${d.default_rental_price||0}"></div><div class="field"><label>التأمين</label><input id="dfDep" type="number" value="${d.default_deposit||0}"></div><div class="field"><label>سعر البيع</label><input id="dfSale" type="number" value="${d.sale_price??''}"></div>
- <div class="field"><label>الحالة</label><select id="dfStatus">${Object.entries(statusAr).slice(0,7).map(([k,v])=>`<option value="${k}" ${d.status===k?'selected':''}>${v}</option>`).join('')}</select></div><div class="field wide"><label>رابط الصورة</label><input id="dfPhoto" value="${esc(d.photo_url||'')}"></div>
- <div class="field full"><label>ملاحظات</label><textarea id="dfNotes">${esc(d.notes||'')}</textarea></div><div class="full"><button class="btn">حفظ</button></div></form>`);
- $('dressForm').onsubmit=async e=>{e.preventDefault();const p={dress_code:$('dfCode').value.trim(),name:$('dfName').value.trim()||null,category_id:$('dfCat').value?+$('dfCat').value:null,current_branch_id:+$('dfBranch').value,size:$('dfSize').value.trim()||null,color:$('dfColor').value.trim()||null,purchase_price:+$('dfBuy').value||0,purchase_date:$('dfBuyDate').value||null,supplier:$('dfSupplier').value.trim()||null,default_rental_price:+$('dfRent').value||0,default_deposit:+$('dfDep').value||0,sale_price:$('dfSale').value===''?null:+$('dfSale').value,status:$('dfStatus').value,photo_url:$('dfPhoto').value.trim()||null,notes:$('dfNotes').value.trim()||null,updated_at:new Date().toISOString()};const r=id?await sb.from('dresses').update(p).eq('id',id).select().single():await sb.from('dresses').insert(p).select().single();if(r.error)return alert(r.error.message);await audit(id?'update':'insert','dresses',r.data.id,{dress_code:r.data.dress_code});closeModal();await refreshAll()}
+ <div class="field"><label>الكود *</label><input id="dfCode" value="${esc(d.dress_code||'')}" required></div>
+ <div class="field"><label>الوصف</label><input id="dfName" value="${esc(d.name||'')}"></div>
+ <div class="field"><label>التصنيف الرئيسي *</label><select id="dfRoot" required><option value="">اختر</option>${roots.map(x=>`<option value="${x.id}" ${selectedRoot?.id===x.id?'selected':''}>${esc(x.name)}</option>`).join('')}</select></div>
+ <div class="field"><label>النوع الفرعي *</label><select id="dfCat" required></select></div>
+ <div class="field"><label>الفرع *</label><select id="dfBranch">${bo}</select></div>
+ <div class="field"><label>المقاس</label><input id="dfSize" value="${esc(d.size||'')}"></div>
+ <div class="field"><label>اللون</label><input id="dfColor" value="${esc(d.color||'')}"></div>
+ <div class="field"><label>سعر الشراء</label><input id="dfBuy" type="number" min="0" value="${d.purchase_price||0}"></div>
+ <div class="field"><label>تاريخ الشراء</label><input id="dfBuyDate" type="date" value="${d.purchase_date||''}"></div>
+ <div class="field"><label>المورد</label><input id="dfSupplier" value="${esc(d.supplier||'')}"></div>
+ <div class="field"><label>سعر الإيجار *</label><input id="dfRent" type="number" min="1" value="${d.default_rental_price||''}" required></div>
+ <div class="field"><label>التأمين *</label><input id="dfDep" type="number" min="0" value="${d.default_deposit??''}" required></div>
+ <div class="field"><label>سعر البيع</label><input id="dfSale" type="number" min="0" value="${d.sale_price??''}"></div>
+ <div class="field"><label>الحالة</label><select id="dfStatus">${Object.entries(statusAr).slice(0,7).map(([k,v])=>`<option value="${k}" ${d.status===k?'selected':''}>${v}</option>`).join('')}</select></div>
+ <div class="field wide"><label>رابط الصورة</label><input id="dfPhoto" value="${esc(d.photo_url||'')}"></div>
+ <div class="field full"><label>ملاحظات</label><textarea id="dfNotes">${esc(d.notes||'')}</textarea></div>
+ <div class="full"><button class="btn">حفظ</button></div></form>`);
+ function fillSubs(){
+   const root=+$('dfRoot').value;
+   const subs=S.categories.filter(x=>x.active&&x.parent_id===root);
+   $('dfCat').innerHTML='<option value="">اختر النوع</option>'+subs.map(x=>`<option value="${x.id}" ${selectedCat?.id===x.id?'selected':''}>${esc(x.name)}</option>`).join('');
+ }
+ $('dfRoot').onchange=fillSubs;fillSubs();
+ $('dressForm').onsubmit=async e=>{
+   e.preventDefault();
+   const rent=+$('dfRent').value,dep=+$('dfDep').value;
+   if(!(rent>0))return alert('سعر الإيجار إجباري ويجب أن يكون أكبر من صفر');
+   if(dep<0)return alert('قيمة التأمين غير صحيحة');
+   const p={dress_code:$('dfCode').value.trim(),name:$('dfName').value.trim()||null,category_id:+$('dfCat').value,current_branch_id:+$('dfBranch').value,size:$('dfSize').value.trim()||null,color:$('dfColor').value.trim()||null,purchase_price:+$('dfBuy').value||0,purchase_date:$('dfBuyDate').value||null,supplier:$('dfSupplier').value.trim()||null,default_rental_price:rent,default_deposit:dep,sale_price:$('dfSale').value===''?null:+$('dfSale').value,status:$('dfStatus').value,photo_url:$('dfPhoto').value.trim()||null,notes:$('dfNotes').value.trim()||null,updated_at:new Date().toISOString()};
+   const r=id?await sb.from('dresses').update(p).eq('id',id).select().single():await sb.from('dresses').insert(p).select().single();
+   if(r.error)return alert(r.error.message);await audit(id?'update':'insert','dresses',r.data.id,{dress_code:r.data.dress_code});closeModal();await refreshAll()
+ }
 }
 window.dressForm=dressForm;
 function transferDress(id){const d=S.dresses.find(x=>x.id===id);openModal('نقل فستان',`<form id="trForm" class="forms"><div class="field"><label>الفستان</label><input value="${esc(d.dress_code)}" disabled></div><div class="field"><label>إلى فرع</label><select id="trTo">${S.branches.filter(x=>x.active&&x.id!==d.current_branch_id).map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('')}</select></div><div class="field"><label>السبب</label><input id="trReason"></div><div class="full"><button class="btn">تنفيذ النقل</button></div></form>`);$('trForm').onsubmit=async e=>{e.preventDefault();const to=+$('trTo').value;const {data,error}=await sb.from('dress_transfers').insert({dress_id:id,from_branch_id:d.current_branch_id,to_branch_id:to,reason:$('trReason').value.trim()||null}).select().single();if(error)return alert(error.message);const u=await sb.from('dresses').update({current_branch_id:to,updated_at:new Date().toISOString()}).eq('id',id);if(u.error)return alert(u.error.message);await audit('transfer','dresses',id,{to_branch_id:to});closeModal();await refreshAll()}}
 window.transferDress=transferDress;
 
 function renderCustomers(){$('customersTable').innerHTML=table(['الاسم','الموبايل','الرقم القومي','العنوان','المقاسات','إجراء'],S.customers.map(c=>`<tr><td>${esc(c.full_name)}</td><td>${esc(c.mobile)}</td><td>${esc(c.national_id||'')}</td><td>${esc(c.address||'')}</td><td>${esc(c.measurements||'')}</td><td><button class="btn light" onclick="customerForm('${c.id}')">تعديل</button></td></tr>`).join(''))}
-function customerForm(id=''){const c=S.customers.find(x=>x.id===id)||{};openModal(id?'تعديل عميل':'إضافة عميل',`<form id="cf" class="forms"><div class="field"><label>الاسم *</label><input id="cfName" value="${esc(c.full_name||'')}"></div><div class="field"><label>الموبايل *</label><input id="cfMobile" value="${esc(c.mobile||'')}"></div><div class="field"><label>الرقم القومي</label><input id="cfNat" value="${esc(c.national_id||'')}"></div><div class="field wide"><label>العنوان</label><input id="cfAddr" value="${esc(c.address||'')}"></div><div class="field"><label>المقاسات</label><input id="cfMeas" value="${esc(c.measurements||'')}"></div><div class="field full"><label>ملاحظات</label><textarea id="cfNotes">${esc(c.notes||'')}</textarea></div><div class="full"><button class="btn">حفظ</button></div></form>`);$('cf').onsubmit=async e=>{e.preventDefault();const p={full_name:$('cfName').value.trim(),mobile:$('cfMobile').value.trim(),national_id:$('cfNat').value.trim()||null,address:$('cfAddr').value.trim()||null,measurements:$('cfMeas').value.trim()||null,notes:$('cfNotes').value.trim()||null};if(!p.full_name||!p.mobile)return alert('الاسم والموبايل مطلوبان');const r=id?await sb.from('customers').update(p).eq('id',id).select().single():await sb.from('customers').insert(p).select().single();if(r.error)return alert(r.error.message);await audit(id?'update':'insert','customers',r.data.id);closeModal();await refreshAll()}}
+function customerForm(id=''){
+ const c=S.customers.find(x=>x.id===id)||{};
+ openModal(id?'تعديل عميل':'إضافة عميل',`<form id="cf" class="forms">
+ <div class="field"><label>الاسم *</label><input id="cfName" value="${esc(c.full_name||'')}"></div>
+ <div class="field"><label>الموبايل *</label><input id="cfMobile" value="${esc(c.mobile||'')}"></div>
+ <div class="field"><label>الرقم القومي</label><input id="cfNat" value="${esc(c.national_id||'')}" placeholder="لا يتكرر بين العملاء"></div>
+ <div class="field wide"><label>العنوان</label><input id="cfAddr" value="${esc(c.address||'')}"></div>
+ <div class="field"><label>المقاسات</label><input id="cfMeas" value="${esc(c.measurements||'')}"></div>
+ <div class="field full"><label>ملاحظات</label><textarea id="cfNotes">${esc(c.notes||'')}</textarea></div>
+ <div class="full"><button class="btn">حفظ</button></div></form>`);
+ $('cf').onsubmit=async e=>{
+   e.preventDefault();
+   const national=$('cfNat').value.trim()||null;
+   const existing=national?S.customers.find(x=>x.national_id?.trim()===national&&x.id!==id):null;
+   if(existing)return alert('الرقم القومي مسجل بالفعل للعميل: '+existing.full_name+' — افتح سجل العميل نفسه بدل إنشاء عميل جديد');
+   const p={full_name:$('cfName').value.trim(),mobile:$('cfMobile').value.trim(),national_id:national,address:$('cfAddr').value.trim()||null,measurements:$('cfMeas').value.trim()||null,notes:$('cfNotes').value.trim()||null};
+   if(!p.full_name||!p.mobile)return alert('الاسم والموبايل مطلوبان');
+   const r=id?await sb.from('customers').update(p).eq('id',id).select().single():await sb.from('customers').insert(p).select().single();
+   if(r.error)return alert(r.error.code==='23505'?'هذا الرقم القومي مسجل بالفعل لعميل آخر':r.error.message);
+   await audit(id?'update':'insert','customers',r.data.id);closeModal();await refreshAll()
+ }
+}
 window.customerForm=customerForm;
 
 function renderBookings(){
@@ -272,8 +344,8 @@ function newBooking(){
    if(!opts)return alert('حدد تاريخ الاستلام والإرجاع أولاً، ولازم يكون فيه فستان متاح في الفترة.');
    const i=document.createElement('div');i.className='forms bkitem';
    i.innerHTML=`<div class="field wide"><label>الفستان المتاح في الفترة</label><select class="itDress">${opts}</select></div>
-   <div class="field"><label>قيمة الإيجار</label><input class="itRent" type="number" value="0"></div>
-   <div class="field"><label>التأمين</label><input class="itDep" type="number" value="0"></div>
+   <div class="field"><label>قيمة الإيجار (ثابتة من الفستان)</label><input class="itRent" type="number" value="0" readonly></div>
+   <div class="field"><label>التأمين (ثابت من الفستان)</label><input class="itDep" type="number" value="0" readonly></div>
    <div class="field"><label>فرع الاستلام</label><select class="itPick">${branches}</select></div>
    <div class="field"><label>فرع الإرجاع</label><select class="itRet">${branches}</select></div>
    <div class="field"><label>فترة تجهيز بعد الرجوع / أيام</label><input class="itBuf" type="number" value="3"></div>`;
@@ -300,9 +372,15 @@ function newBooking(){
    const full_name=$('bkCustName').value.trim(),mobile=$('bkCustMobile').value.trim();
    if(!full_name||!mobile)return alert('اسم العميل ورقم الموبايل مطلوبان');
    const customerPayload={full_name,mobile,national_id:$('bkCustNat').value.trim()||null,address:$('bkCustAddr').value.trim()||null,measurements:$('bkCustMeas').value.trim()||null,notes:$('bkCustNotes').value.trim()||null};
-   let customer=S.customers.find(c=>String(c.mobile||'').trim()===mobile);
-   if(customer){const cr=await sb.from('customers').update(customerPayload).eq('id',customer.id).select().single();if(cr.error)return alert(cr.error.message);customer=cr.data}
-   else{const cr=await sb.from('customers').insert(customerPayload).select().single();if(cr.error)return alert(cr.error.message);customer=cr.data;await audit('insert','customers',customer.id,{full_name,mobile})}
+   const nat=customerPayload.national_id;
+   let customer=nat?S.customers.find(c=>String(c.national_id||'').trim()===nat):null;
+   if(customer){
+     const cr=await sb.from('customers').update(customerPayload).eq('id',customer.id).select().single();if(cr.error)return alert(cr.error.message);customer=cr.data;
+   }else{
+     const cr=await sb.from('customers').insert(customerPayload).select().single();
+     if(cr.error)return alert(cr.error.code==='23505'?'الرقم القومي مسجل بالفعل لعميل آخر':cr.error.message);
+     customer=cr.data;await audit('insert','customers',customer.id,{full_name,mobile,national_id:nat})
+   }
 
    const items=[...document.querySelectorAll('.bkitem')].map(i=>({dress_id:i.querySelector('.itDress').value,rental_price:+i.querySelector('.itRent').value||0,deposit_amount:+i.querySelector('.itDep').value||0,pickup_branch_id:+i.querySelector('.itPick').value,return_branch_id:+i.querySelector('.itRet').value,prep_buffer_days:+i.querySelector('.itBuf').value||3})).filter(x=>x.dress_id);
    if(!items.length)return alert('اختر فستاناً من قاعدة الفساتين');
@@ -449,13 +527,20 @@ async function returnBooking(id){
 window.returnBooking=returnBooking;
 
 function renderPrep(){
- $('prepTable').innerHTML=table(['الفستان','نوع الدورة','المرحلة','الحالة','المسؤول','بدأ','اكتمل','إجراء'],
- S.prep.map(p=>{
-   const bd=S.bookingDresses.find(x=>x.id===p.booking_dress_id);
-   const type=String(p.stage_name||'').startsWith('بروفة:')?'بعد البروفة':String(p.stage_name||'').startsWith('رجوع:')?'بعد الرجوع':'تجهيز';
-   const stage=String(p.stage_name||'').replace(/^بروفة:\s*/,'').replace(/^رجوع:\s*/,'');
-   return `<tr><td>${esc(dressName(bd?.dress_id))}</td><td><span class="pill">${type}</span></td><td>${esc(stage)}</td><td>${esc(statusAr[p.status]||p.status)}</td><td>${esc(p.responsible_name||'')}</td><td>${p.started_at?new Date(p.started_at).toLocaleString('ar-EG'):'—'}</td><td>${p.completed_at?new Date(p.completed_at).toLocaleString('ar-EG'):'—'}</td><td><button class="btn light" onclick="prepAction('${p.id}')">تحديث</button></td></tr>`
- }).join(''))
+ const fitStages=['تسجيل المقاسات','تحديد التعديلات المطلوبة','تنفيذ التعديلات والخياطة','بروفة مراجعة','كي وتجهيز','فحص نهائي قبل التسليم','جاهز للاستلام'];
+ const retStages=['استلام وفحص بعد الإيجار','تسجيل التلفيات والملاحظات','تنظيف','تعقيم وإزالة الروائح','كي وتجهيز','إصلاح أو صيانة إن لزم','فحص نهائي وجاهز للإتاحة'];
+ const tabs=[...fitStages.map(x=>({key:'بروفة: '+x,label:'بروفة - '+x})),...retStages.map(x=>({key:'رجوع: '+x,label:'رجوع - '+x}))];
+ let current=$('prepNav')?.dataset.current||tabs[0].key;
+ $('prepNav').innerHTML=tabs.map(t=>`<button data-prep="${esc(t.key)}" class="${t.key===current?'tabactive':''}">${esc(t.label)}</button>`).join('');
+ $('prepNav').dataset.current=current;
+ function draw(){
+   const rows=S.prep.filter(p=>String(p.stage_name||'')===current);
+   $('prepTable').innerHTML=table(['الفستان','الحجز','الحالة','المسؤول','بدأ','اكتمل','ملاحظات','إجراء'],rows.map(p=>{
+     const bd=S.bookingDresses.find(x=>x.id===p.booking_dress_id),b=S.bookings.find(x=>x.id===bd?.booking_id);
+     return `<tr><td>${esc(dressName(bd?.dress_id))}</td><td>${esc(b?.receipt_no||'')}</td><td>${esc(statusAr[p.status]||p.status)}</td><td>${esc(p.responsible_name||'')}</td><td>${p.started_at?formatDMY(p.started_at):'—'}</td><td>${p.completed_at?formatDMY(p.completed_at):'—'}</td><td>${esc(p.notes||'')}</td><td><button class="btn light" onclick="prepAction('${p.id}')">تحديث</button></td></tr>`).join(''));
+ }
+ document.querySelectorAll('#prepNav button').forEach(b=>b.onclick=()=>{current=b.dataset.prep;$('prepNav').dataset.current=current;document.querySelectorAll('#prepNav button').forEach(x=>x.classList.toggle('tabactive',x===b));draw()});
+ draw();
 }
 
 function prepAction(id){
@@ -480,6 +565,26 @@ function prepAction(id){
 }
 window.prepAction=prepAction;
 
+function renderDeposits(){
+ const rows=[];
+ S.bookings.filter(b=>b.status!=='cancelled').forEach(b=>{
+   const due=Math.max(0,Number(b.deposit_total||0)-Number(b.deposit_damage_deduction||0)-Number(b.deposit_refunded||0));
+   if(due<=0)return;
+   const items=S.bookingDresses.filter(x=>x.booking_id===b.id);
+   rows.push({b,due,items});
+ });
+ const total=rows.reduce((a,x)=>a+x.due,0);
+ $('depositSummary').innerHTML=`إجمالي التأمينات التي ما زالت على المحل للعملاء: <b>${money(total)}</b> — عدد الحجوزات: <b>${rows.length}</b>`;
+ $('depositsTable').innerHTML=table(['العميل','رقم الحجز','الفستان/الفساتين','التأمين الأصلي','الخصم','سبب الخصم','تم رده','المتبقي للعميل','موعد الاستحقاق','حالة الحجز'],
+ rows.map(x=>`<tr>
+  <td>${esc(customerName(x.b.customer_id))}</td><td>${x.b.receipt_no}</td>
+  <td>${esc(x.items.map(i=>dressName(i.dress_id)).join(' / '))}</td>
+  <td>${money(x.b.deposit_total)}</td><td>${money(x.b.deposit_damage_deduction)}</td><td>${esc(x.b.deposit_damage_reason||'—')}</td>
+  <td>${money(x.b.deposit_refunded)}</td><td><b>${money(x.due)}</b></td>
+  <td>${formatDMY(x.b.actual_return_at||x.b.expected_return_at)}</td><td>${esc(statusAr[x.b.status]||x.b.status)}</td>
+ </tr>`).join(''));
+}
+
 function renderBranches(){$('branchesTable').innerHTML=table(['الفرع','الحالة','إجراء'],S.branches.map(b=>`<tr><td>${esc(b.name)}</td><td>${b.active?'نشط':'موقوف'}</td><td>${roleCanManage()?`<button class="btn light" onclick="toggleBranch(${b.id},${!b.active})">${b.active?'إيقاف':'تفعيل'}</button>`:''}</td></tr>`).join(''))}
 function newBranch(){openModal('إضافة فرع',`<form id="brf" class="forms"><div class="field wide"><label>اسم الفرع</label><input id="brName"></div><div><button class="btn">حفظ</button></div></form>`);$('brf').onsubmit=async e=>{e.preventDefault();const r=await sb.from('branches').insert({name:$('brName').value.trim()}).select().single();if(r.error)return alert(r.error.message);closeModal();await refreshAll()}}
 window.newBranch=newBranch;window.toggleBranch=async(id,v)=>{const r=await sb.from('branches').update({active:v}).eq('id',id);if(r.error)return alert(r.error.message);await refreshAll()}
@@ -503,7 +608,7 @@ function saleForm(){openModal('بيع فستان',`<form id="sf" class="forms"><
 window.saleForm=saleForm;
 
 $('loginBtn').onclick=login;$('password').addEventListener('keydown',e=>{if(e.key==='Enter')login()});$('logoutBtn').onclick=async()=>{await sb.auth.signOut();location.reload()};$('refreshBtn').onclick=refreshAll;
-$('newDressBtn').onclick=()=>dressForm();$('newCustomerBtn').onclick=()=>customerForm();$('newBookingBtn').onclick=newBooking;$('newBranchBtn').onclick=newBranch;$('newPaymentBtn').onclick=paymentForm;$('newExpenseBtn').onclick=expenseForm;$('newDressExpenseBtn').onclick=dressExpenseForm;$('newSaleBtn').onclick=saleForm;
+$('newDressBtn').onclick=()=>dressForm();$('newCustomerBtn').onclick=()=>customerForm();$('newBookingBtn').onclick=newBooking;$('newBranchBtn').onclick=newBranch;$('newExpenseBtn').onclick=expenseForm;$('newDressExpenseBtn').onclick=dressExpenseForm;$('newSaleBtn').onclick=saleForm;
 $('dressSearch').oninput=renderDresses;$('dressFilter').onchange=renderDresses;
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('tabactive'));b.classList.add('tabactive');document.querySelectorAll('.tabpane').forEach(x=>x.classList.remove('active'));$(b.dataset.tab).classList.add('active')});
 sb.auth.getSession().then(({data})=>data.session?start():null);
