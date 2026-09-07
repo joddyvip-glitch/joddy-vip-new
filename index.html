@@ -256,7 +256,7 @@ function newBooking(){
  function refreshAvailability(){
    const {pick,ret}=bookingDates();
    if(!pick||!ret){$('availabilityMsg').textContent='اكتب التاريخ بصيغة يوم/شهر/سنة.';return}
-   if(ret<pick){$('availabilityMsg').textContent='تاريخ الإرجاع لازم يكون بعد أو نفس تاريخ الاستلام.';return}
+   if(ret<=pick){$('availabilityMsg').textContent='تاريخ الإرجاع لازم يكون بعد تاريخ الاستلام بيوم على الأقل.';return}
    const opts=availableOptions();
    $('availabilityMsg').innerHTML=opts?`الفساتين المتاحة للفترة من <b>${esc($('bkPickup').value)}</b> إلى <b>${esc($('bkReturn').value)}</b> جاهزة للاختيار.`:'لا توجد فساتين متاحة في الفترة المختارة.';
    document.querySelectorAll('.itDress').forEach(s=>{
@@ -296,7 +296,7 @@ function newBooking(){
    e.preventDefault();
    const dates=bookingDates();
    if(!dates.event||!dates.pick||!dates.ret||($('bkFit').value&&!dates.fit))return alert('اكتب التواريخ بصيغة يوم/شهر/سنة مثل 20/09/2026');
-   if(dates.ret<dates.pick)return alert('تاريخ الإرجاع لازم يكون بعد تاريخ الاستلام');
+   if(dates.ret<=dates.pick)return alert('تاريخ الإرجاع لازم يكون بعد تاريخ الاستلام بيوم على الأقل');
    const full_name=$('bkCustName').value.trim(),mobile=$('bkCustMobile').value.trim();
    if(!full_name||!mobile)return alert('اسم العميل ورقم الموبايل مطلوبان');
    const customerPayload={full_name,mobile,national_id:$('bkCustNat').value.trim()||null,address:$('bkCustAddr').value.trim()||null,measurements:$('bkCustMeas').value.trim()||null,notes:$('bkCustNotes').value.trim()||null};
