@@ -134,7 +134,15 @@ window.closeModal=()=>{$('modalHost').innerHTML=''}
 
 function navInit(){const n=$('nav');n.innerHTML='';Object.entries(labels).forEach(([id,l])=>{const b=document.createElement('button');b.textContent=l;b.dataset.id=id;if(id==='dashboard')b.classList.add('active');b.onclick=()=>showSection(id);n.appendChild(b)})}
 function showSection(id){document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));$(id).classList.add('active');document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('active',x.dataset.id===id));$('pageTitle').textContent=labels[id]}
-async function login(){msg($('loginMsg'),'جاري الدخول...');const {error}=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)return msg($('loginMsg'),'تعذر الدخول: '+error.message,true);await start()}
+async function login(){
+ msg($('loginMsg'),'جاري الدخول...');
+ let loginId=$('email').value.trim();
+ const aliases={joddy1:'joddy1@joddy.local',vip1:'vip1@joddy.local'};
+ const email=aliases[loginId]||loginId;
+ const {error}=await sb.auth.signInWithPassword({email,password:$('password').value});
+ if(error)return msg($('loginMsg'),'تعذر الدخول: اسم المستخدم أو كلمة المرور غير صحيحة',true);
+ await start()
+}
 async function start(){const {data:{user}}=await sb.auth.getUser();if(!user)return;const {data:p,error}=await sb.from('user_profiles').select('*').eq('user_id',user.id).single();if(error||!p||!p.active){await sb.auth.signOut();return msg($('loginMsg'),'الحساب غير فعال أو غير مصرح',true)}S.profile=p;$('userBox').textContent=(p.full_name||user.email)+' — '+p.role;$('loginView').classList.add('hidden');$('appView').classList.remove('hidden');navInit();await refreshAll()}
 async function refreshAll(){
  const qs=[
