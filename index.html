@@ -1,287 +1,215 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
-  <title>Joddy VIP Dresses</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    :root{--bg:#f6f3f7;--card:#fff;--text:#201a24;--muted:#766b78;--line:#e6dfe8;--brand:#6d2f72;--brand2:#8e4b94;--danger:#b42318;--ok:#18734a}
-    *{box-sizing:border-box} body{margin:0;font-family:Tahoma,Arial,sans-serif;background:var(--bg);color:var(--text)}
-    button,input,select,textarea{font:inherit} button{cursor:pointer}
-    .hidden{display:none!important}.centered{min-height:100vh;display:grid;place-items:center;padding:20px}
-    .card{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:0 8px 30px #0000000b}
-    .login-card{width:min(430px,100%);padding:26px}.login-card h1{margin:0 0 6px}.login-card p{color:var(--muted)}
-    input,select,textarea{width:100%;padding:11px 12px;border:1px solid #d8cedb;border-radius:10px;background:#fff}
-    textarea{min-height:85px;resize:vertical}.login-card input{margin:7px 0}
-    .btn{border:0;border-radius:10px;padding:10px 14px;background:var(--brand);color:white;font-weight:700}.btn:hover{background:var(--brand2)}
-    .btn.secondary{background:#746b76}.btn.light{background:#eee8ef;color:#3a303d}.btn.danger{background:var(--danger)}
-    .app{display:grid;grid-template-columns:240px 1fr;min-height:100vh}.sidebar{background:#2f2132;color:white;padding:20px 14px;display:flex;flex-direction:column;gap:12px}
-    .brand{font-size:26px;font-weight:800;letter-spacing:2px;padding:8px 10px}.sidebar nav{display:grid;gap:7px}
-    .sidebar nav button{border:0;text-align:right;padding:11px 12px;border-radius:10px;background:transparent;color:white}.sidebar nav button.active,.sidebar nav button:hover{background:#ffffff1a}
-    .sidebar .logout{margin-top:auto}.content{padding:22px;min-width:0}
-    header{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:18px}header h2{margin:0}small{color:var(--muted)}
-    .section{display:none}.active-section{display:block}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
-    .stat{padding:18px}.stat span{display:block;color:var(--muted);font-size:13px}.stat strong{font-size:27px;margin-top:6px;display:block}
-    .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center;margin-bottom:12px}
-    .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.toolbar input,.toolbar select{width:auto;min-width:170px}
-    .panel{padding:16px}.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px}
-    table{width:100%;border-collapse:collapse;min-width:900px;background:#fff}th,td{padding:10px;border-bottom:1px solid #eee;text-align:right;font-size:13px;vertical-align:middle}
-    th{background:#faf8fb;position:sticky;top:0}.pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#eee8ef;font-size:12px}
-    .pill.available{background:#e8f6ef;color:#18734a}.pill.booked,.pill.rented{background:#fff3df;color:#9a5b00}.pill.sold{background:#ececec;color:#555}
-    .row-actions{display:flex;gap:6px}.row-actions button{padding:6px 9px;border-radius:8px;border:0}
-    .msg{margin-top:10px;padding:10px 12px;border-radius:10px;background:#f2eef4}.msg.error{background:#fdecec;color:#8f1d18}.msg.ok{background:#eaf7f0;color:#17633f}
-    .modal-backdrop{position:fixed;inset:0;background:#0008;display:grid;place-items:center;padding:18px;z-index:50}
-    .modal{width:min(900px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:18px;padding:18px}.modal-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}
-    .modal-head h3{margin:0}.close{border:0;background:#eee8ef;width:38px;height:38px;border-radius:10px;font-size:20px}
-    .form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.form-grid .full{grid-column:1/-1}.form-grid label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px}
-    .form-actions{display:flex;justify-content:flex-start;gap:8px;margin-top:14px}
-    .empty{padding:25px;text-align:center;color:var(--muted)}
-    @media(max-width:900px){.app{grid-template-columns:1fr}.sidebar{position:sticky;top:0;z-index:20;display:block}.brand{display:inline-block}.sidebar nav{display:flex;overflow:auto}.sidebar nav button{white-space:nowrap}.sidebar .logout{float:left}.content{padding:14px}.stats{grid-template-columns:repeat(2,1fr)}.form-grid{grid-template-columns:1fr 1fr}}
-    @media(max-width:600px){.stats{grid-template-columns:1fr 1fr}.form-grid{grid-template-columns:1fr}.toolbar input,.toolbar select{width:100%;min-width:0}.toolbar .left,.toolbar .right{width:100%}}
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-store">
+<title>Joddy VIP Dresses</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Tahoma,Arial;background:#f6f4f7;color:#231f26}.hidden{display:none!important}
+button,input,select,textarea{font:inherit}.btn{border:0;border-radius:10px;padding:10px 13px;cursor:pointer;background:#6f3a75;color:#fff;font-weight:700}.btn.alt{background:#736b75}.btn.light{background:#eee9ef;color:#332e35}.btn.danger{background:#b42318}
+.login{min-height:100vh;display:grid;place-items:center;padding:20px;background:linear-gradient(135deg,#2c2030,#6f3a75)}.loginbox{width:min(430px,100%);background:#fff;padding:26px;border-radius:20px}.logo{font-size:32px;font-weight:900;text-align:center}.sub{text-align:center;color:#756d77;margin:8px 0 20px}
+.field{display:flex;flex-direction:column;gap:5px}.field label{font-size:12px;color:#766d79}.field input,.field select,.field textarea{padding:10px;border:1px solid #d9d1dc;border-radius:9px;background:#fff}.field textarea{min-height:80px}
+.app{display:grid;grid-template-columns:245px 1fr;min-height:100vh}.side{background:#2b202e;color:#fff;padding:18px;position:sticky;top:0;height:100vh}.brand{font-size:28px;font-weight:900;margin-bottom:8px}.user{font-size:12px;color:#ddd0df;margin-bottom:15px}.nav{display:grid;gap:7px}.nav button{border:0;background:#3d3041;color:#fff;padding:11px;border-radius:9px;text-align:right;cursor:pointer}.nav button.active{background:#fff;color:#2b202e}.logout{position:absolute;bottom:18px;right:18px;left:18px}
+.main{padding:18px;min-width:0}.top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:15px}.top h2{margin:0}.section{display:none}.section.active{display:block}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}.card{background:#fff;border:1px solid #ebe5ed;border-radius:15px;padding:15px;box-shadow:0 4px 20px #00000008}.stat small{color:#746d77}.stat strong{display:block;font-size:25px;margin-top:6px}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}.forms{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.full{grid-column:1/-1}.wide{grid-column:span 2}
+.tablewrap{overflow:auto;border:1px solid #ece7ee;border-radius:12px;margin-top:12px}table{width:100%;border-collapse:collapse;min-width:900px;background:white}th,td{padding:9px;border-bottom:1px solid #eee;text-align:right;font-size:13px;vertical-align:middle}th{background:#faf9fb}
+.pill{padding:4px 8px;border-radius:999px;background:#eee9ef;font-size:12px;display:inline-block}.ok{background:#e9f7ef;color:#17663f}.warn{background:#fff2db;color:#8d5700}.bad{background:#fdeceb;color:#97211b}
+.msg{padding:10px;border-radius:9px;background:#f2eef4;margin:8px 0}.msg.err{background:#fdeaea;color:#8f1c17}.rowactions{display:flex;gap:5px;flex-wrap:wrap}
+.modalbg{position:fixed;inset:0;background:#0008;display:grid;place-items:center;padding:16px;z-index:99}.modal{width:min(980px,100%);max-height:94vh;overflow:auto;background:#fff;border-radius:18px;padding:16px}.modalhead{display:flex;justify-content:space-between;align-items:center}.close{border:0;background:#eee9ef;border-radius:9px;width:36px;height:36px;font-size:20px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}.tabs button{border:0;border-radius:9px;padding:8px 10px;cursor:pointer}.tabactive{background:#6f3a75;color:#fff}.tabpane{display:none}.tabpane.active{display:block}
+@media(max-width:950px){.app{grid-template-columns:1fr}.side{height:auto;position:sticky;z-index:20;display:block}.nav{display:flex;overflow:auto}.nav button{white-space:nowrap}.logout{position:static;margin-top:10px;width:100%}.grid{grid-template-columns:repeat(2,1fr)}.forms{grid-template-columns:1fr 1fr}.main{padding:12px}}
+@media(max-width:620px){.forms{grid-template-columns:1fr}.wide,.full{grid-column:auto}.grid{grid-template-columns:1fr 1fr}}
+</style>
 </head>
 <body>
-  <div id="loginView" class="centered">
-    <div class="card login-card">
-      <h1>Joddy VIP Dresses</h1>
-      <p>نظام إدارة الفساتين والإيجارات والفروع والمالية</p>
-      <input id="email" type="email" placeholder="البريد الإلكتروني">
-      <input id="password" type="password" placeholder="كلمة المرور">
-      <button id="loginBtn" class="btn" style="width:100%;margin-top:8px">دخول</button>
-      <div id="loginMsg" class="msg hidden"></div>
-    </div>
-  </div>
+<div id="loginView" class="login">
+ <div class="loginbox">
+  <div class="logo">JODDY</div><div class="sub">نظام إدارة الفساتين والإيجارات والفروع والمالية</div>
+  <div class="field"><label>البريد الإلكتروني</label><input id="email" type="email"></div>
+  <div class="field"><label>كلمة المرور</label><input id="password" type="password"></div>
+  <button id="loginBtn" class="btn" style="width:100%;margin-top:10px">دخول</button>
+  <div id="loginMsg"></div>
+ </div>
+</div>
 
-  <div id="appView" class="app hidden">
-    <aside class="sidebar">
-      <div class="brand">JODDY</div>
-      <nav>
-        <button data-section="dashboard" class="active">لوحة التحكم</button>
-        <button data-section="dresses">الفساتين</button>
-        <button data-section="bookings">الإيجارات</button>
-        <button data-section="customers">العملاء</button>
-        <button data-section="branches">الفروع</button>
-        <button data-section="preparation">التنظيف والتجهيز</button>
-        <button data-section="finance">المالية</button>
-      </nav>
-      <button id="logoutBtn" class="btn danger logout">تسجيل الخروج</button>
-    </aside>
+<div id="appView" class="app hidden">
+ <aside class="side">
+  <div class="brand">JODDY</div><div id="userBox" class="user"></div>
+  <div id="nav" class="nav"></div>
+  <button id="logoutBtn" class="btn danger logout">تسجيل الخروج</button>
+ </aside>
+ <main class="main">
+  <div class="top"><h2 id="pageTitle">لوحة التحكم</h2><button id="refreshBtn" class="btn light">تحديث</button></div>
 
-    <main class="content">
-      <header>
-        <div><h2 id="pageTitle">لوحة التحكم</h2><small id="userLabel"></small></div>
-        <button id="refreshBtn" class="btn light">تحديث</button>
-      </header>
+  <section id="dashboard" class="section active">
+   <div id="stats" class="grid"></div>
+   <div class="card" style="margin-top:12px"><h3>تشغيل اليوم</h3><div id="todaySummary"></div></div>
+  </section>
 
-      <section id="dashboard" class="section active-section">
-        <div class="stats">
-          <div class="card stat"><span>الفساتين</span><strong id="dressCount">—</strong></div>
-          <div class="card stat"><span>الإيجارات</span><strong id="bookingCount">—</strong></div>
-          <div class="card stat"><span>العملاء</span><strong id="customerCount">—</strong></div>
-          <div class="card stat"><span>الفروع</span><strong id="branchCount">—</strong></div>
-        </div>
-      </section>
+  <section id="dresses" class="section">
+   <div class="toolbar"><button id="newDressBtn" class="btn">+ إضافة فستان</button><input id="dressSearch" placeholder="بحث بالكود/الاسم/اللون"><select id="dressFilter"><option value="">كل الحالات</option><option value="available">متاح</option><option value="booked">محجوز</option><option value="rented">مؤجر</option><option value="preparation">تجهيز</option><option value="maintenance">صيانة</option><option value="sold">مباع</option><option value="inactive">غير نشط</option></select></div>
+   <div class="card"><div id="dressesTable"></div></div>
+  </section>
 
-      <section id="dresses" class="section">
-        <div class="toolbar">
-          <div class="right">
-            <button id="addDressBtn" class="btn">+ إضافة فستان</button>
-            <input id="dressSearch" placeholder="بحث بالكود / الاسم / اللون">
-            <select id="dressStatusFilter">
-              <option value="">كل الحالات</option>
-              <option value="available">متاح</option><option value="booked">محجوز</option><option value="rented">مؤجر</option>
-              <option value="preparation">تجهيز</option><option value="sold">مباع</option><option value="maintenance">صيانة</option><option value="inactive">غير نشط</option>
-            </select>
-          </div>
-          <div class="left"><small id="dressResultCount"></small></div>
-        </div>
-        <div class="card panel">
-          <div id="dressesMsg" class="msg hidden"></div>
-          <div class="table-wrap"><div id="dressesTable"></div></div>
-        </div>
-      </section>
+  <section id="customers" class="section">
+   <div class="toolbar"><button id="newCustomerBtn" class="btn">+ إضافة عميل</button></div>
+   <div class="card"><div id="customersTable"></div></div>
+  </section>
 
-      <section id="bookings" class="section"><div class="card panel"><h3>الإيجارات</h3><div class="msg">سيتم تنفيذ شاشة الحجز الكاملة في الخطوة التالية.</div></div></section>
-      <section id="customers" class="section"><div class="card panel"><h3>العملاء</h3><div id="customersTable"></div></div></section>
-      <section id="branches" class="section"><div class="card panel"><h3>الفروع</h3><div id="branchesTable"></div></div></section>
-      <section id="preparation" class="section"><div class="card panel"><h3>التنظيف والتجهيز</h3><div id="prepTable"></div></div></section>
-      <section id="finance" class="section"><div class="card panel"><h3>المالية</h3><div class="msg">سيتم تنفيذ شاشة المالية الكاملة بعد شاشة الحجز.</div><div id="paymentsTable"></div></div></section>
-    </main>
-  </div>
+  <section id="bookings" class="section">
+   <div class="toolbar"><button id="newBookingBtn" class="btn">+ حجز جديد</button></div>
+   <div class="card"><div id="bookingsTable"></div></div>
+  </section>
 
-  <div id="dressModal" class="modal-backdrop hidden">
-    <div class="modal">
-      <div class="modal-head"><h3 id="dressModalTitle">إضافة فستان</h3><button id="closeDressModal" class="close">×</button></div>
-      <form id="dressForm">
-        <input type="hidden" id="dressId">
-        <div class="form-grid">
-          <div><label>كود الفستان *</label><input id="dressCode" required></div>
-          <div><label>اسم / وصف الفستان</label><input id="dressName"></div>
-          <div><label>التصنيف</label><select id="dressCategory"></select></div>
-          <div><label>الفرع الحالي *</label><select id="dressBranch" required></select></div>
-          <div><label>المقاس</label><input id="dressSize"></div>
-          <div><label>اللون</label><input id="dressColor"></div>
-          <div><label>سعر الشراء</label><input id="purchasePrice" type="number" min="0" step="0.01" value="0"></div>
-          <div><label>تاريخ الشراء</label><input id="purchaseDate" type="date"></div>
-          <div><label>المورد</label><input id="supplier"></div>
-          <div><label>سعر الإيجار الافتراضي</label><input id="rentalPrice" type="number" min="0" step="0.01" value="0"></div>
-          <div><label>مبلغ التأمين الافتراضي</label><input id="deposit" type="number" min="0" step="0.01" value="0"></div>
-          <div><label>سعر البيع</label><input id="salePrice" type="number" min="0" step="0.01"></div>
-          <div><label>الحالة</label>
-            <select id="dressStatus">
-              <option value="available">متاح</option><option value="booked">محجوز</option><option value="rented">مؤجر</option>
-              <option value="preparation">تجهيز</option><option value="sold">مباع</option><option value="maintenance">صيانة</option><option value="inactive">غير نشط</option>
-            </select>
-          </div>
-          <div class="full"><label>رابط صورة الفستان</label><input id="photoUrl" type="url" placeholder="https://..."></div>
-          <div class="full"><label>ملاحظات</label><textarea id="dressNotes"></textarea></div>
-        </div>
-        <div id="dressFormMsg" class="msg hidden"></div>
-        <div class="form-actions">
-          <button type="submit" class="btn">حفظ</button>
-          <button type="button" id="cancelDressBtn" class="btn secondary">إلغاء</button>
-        </div>
-      </form>
-    </div>
-  </div>
+  <section id="preparation" class="section">
+   <div class="card"><div id="prepTable"></div></div>
+  </section>
+
+  <section id="branches" class="section">
+   <div class="toolbar"><button id="newBranchBtn" class="btn">+ إضافة فرع</button></div>
+   <div class="card"><div id="branchesTable"></div></div>
+  </section>
+
+  <section id="finance" class="section">
+   <div id="financeStats" class="grid"></div>
+   <div class="tabs" style="margin-top:12px">
+    <button data-tab="payments" class="tabactive">التحصيلات</button><button data-tab="expenses">المصروفات</button><button data-tab="dexp">مصروفات الفساتين</button><button data-tab="sales">المبيعات</button>
+   </div>
+   <div id="payments" class="tabpane active card"><div class="toolbar"><button id="newPaymentBtn" class="btn">+ تسجيل تحصيل</button></div><div id="paymentsTable"></div></div>
+   <div id="expenses" class="tabpane card"><div class="toolbar"><button id="newExpenseBtn" class="btn">+ مصروف عام</button></div><div id="expensesTable"></div></div>
+   <div id="dexp" class="tabpane card"><div class="toolbar"><button id="newDressExpenseBtn" class="btn">+ مصروف فستان</button></div><div id="dressExpensesTable"></div></div>
+   <div id="sales" class="tabpane card"><div class="toolbar"><button id="newSaleBtn" class="btn">+ بيع فستان</button></div><div id="salesTable"></div></div>
+  </section>
+ </main>
+</div>
+
+<div id="modalHost"></div>
 
 <script>
 const SUPABASE_URL='https://qzgtjuxiqmixjriiczxm.supabase.co';
 const SUPABASE_KEY='sb_publishable_Q_HEnAkqk9jrMOjcF2krtA_KhTEZJaA';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const $=id=>document.getElementById(id), esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const money=v=>new Intl.NumberFormat('ar-EG',{maximumFractionDigits:2}).format(Number(v||0))+' ج.م';
+const labels={dashboard:'لوحة التحكم',dresses:'الفساتين',bookings:'الحجوزات والإيجارات',customers:'العملاء',preparation:'التنظيف والتجهيز',branches:'الفروع',finance:'المالية'};
+const statusAr={available:'متاح',booked:'محجوز',rented:'مؤجر',preparation:'تجهيز',maintenance:'صيانة',sold:'مباع',inactive:'غير نشط',reserved:'محجوز',confirmed:'مؤكد',picked_up:'تم الاستلام',returned:'تم الإرجاع',cancelled:'ملغي',completed:'مكتمل',pending:'معلق',in_progress:'جاري',done:'تم',skipped:'متخطى'};
+let S={profile:null,branches:[],categories:[],dresses:[],customers:[],bookings:[],bookingDresses:[],prep:[],payments:[],expenses:[],dressExpenses:[],sales:[],transfers:[]};
 
-let currentUser=null, branches=[], categories=[], dresses=[];
-const $=id=>document.getElementById(id);
-const statusAr={available:'متاح',booked:'محجوز',rented:'مؤجر',preparation:'تجهيز',sold:'مباع',maintenance:'صيانة',inactive:'غير نشط'};
-const money=v=>Number(v||0).toLocaleString('ar-EG',{minimumFractionDigits:0,maximumFractionDigits:2});
-function showMsg(el,text,type=''){el.textContent=text;el.className='msg '+type;el.classList.remove('hidden')}
-function hideMsg(el){el.classList.add('hidden')}
-function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+function msg(el,t,e=false){el.innerHTML='<div class="msg '+(e?'err':'')+'">'+esc(t)+'</div>'}
+async function audit(action,table,id,details={}){try{await sb.from('audit_log').insert({action,table_name:table,record_id:String(id||''),details})}catch{}}
+function roleCanManage(){return S.profile&&S.profile.role!=='employee'}
+function branchName(id){return S.branches.find(x=>String(x.id)===String(id))?.name||'—'}
+function customerName(id){return S.customers.find(x=>x.id===id)?.full_name||'—'}
+function dressName(id){const d=S.dresses.find(x=>x.id===id);return d?d.dress_code+' '+(d.name||''):'—'}
+function openModal(title,body){$('modalHost').innerHTML=`<div class="modalbg"><div class="modal"><div class="modalhead"><h3>${esc(title)}</h3><button class="close" onclick="closeModal()">×</button></div>${body}</div></div>`}
+window.closeModal=()=>{$('modalHost').innerHTML=''}
 
-async function boot(){
-  const {data:{session}}=await sb.auth.getSession();
-  if(session){currentUser=session.user; await enterApp();}
+function navInit(){const n=$('nav');n.innerHTML='';Object.entries(labels).forEach(([id,l])=>{const b=document.createElement('button');b.textContent=l;b.dataset.id=id;if(id==='dashboard')b.classList.add('active');b.onclick=()=>showSection(id);n.appendChild(b)})}
+function showSection(id){document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));$(id).classList.add('active');document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('active',x.dataset.id===id));$('pageTitle').textContent=labels[id]}
+async function login(){msg($('loginMsg'),'جاري الدخول...');const {error}=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)return msg($('loginMsg'),'تعذر الدخول: '+error.message,true);await start()}
+async function start(){const {data:{user}}=await sb.auth.getUser();if(!user)return;const {data:p,error}=await sb.from('user_profiles').select('*').eq('user_id',user.id).single();if(error||!p||!p.active){await sb.auth.signOut();return msg($('loginMsg'),'الحساب غير فعال أو غير مصرح',true)}S.profile=p;$('userBox').textContent=(p.full_name||user.email)+' — '+p.role;$('loginView').classList.add('hidden');$('appView').classList.remove('hidden');navInit();await refreshAll()}
+async function refreshAll(){
+ const qs=[
+  sb.from('branches').select('*').order('name'),
+  sb.from('categories').select('*').order('sort_order'),
+  sb.from('dresses').select('*').order('created_at',{ascending:false}),
+  sb.from('customers').select('*').order('created_at',{ascending:false}),
+  sb.from('bookings').select('*').order('created_at',{ascending:false}),
+  sb.from('booking_dresses').select('*'),
+  sb.from('preparation_tasks').select('*'),
+  sb.from('payments').select('*').order('paid_at',{ascending:false}),
+  sb.from('expenses').select('*').order('expense_date',{ascending:false}),
+  sb.from('dress_expenses').select('*').order('expense_date',{ascending:false}),
+  sb.from('sales').select('*').order('sold_at',{ascending:false}),
+  sb.from('dress_transfers').select('*').order('transferred_at',{ascending:false})
+ ];
+ const r=await Promise.all(qs);['branches','categories','dresses','customers','bookings','bookingDresses','prep','payments','expenses','dressExpenses','sales','transfers'].forEach((k,i)=>S[k]=r[i].data||[]);
+ renderAll();
 }
-async function enterApp(){
-  $('loginView').classList.add('hidden'); $('appView').classList.remove('hidden');
-  $('userLabel').textContent=currentUser?.email||'';
-  await Promise.all([loadLookups(),loadDashboard()]);
-}
-$('loginBtn').onclick=async()=>{
-  hideMsg($('loginMsg'));
-  const email=$('email').value.trim(),password=$('password').value;
-  const {data,error}=await sb.auth.signInWithPassword({email,password});
-  if(error)return showMsg($('loginMsg'),error.message,'error');
-  currentUser=data.user; await enterApp();
-};
-$('logoutBtn').onclick=async()=>{await sb.auth.signOut();location.reload()};
-$('refreshBtn').onclick=async()=>{await loadLookups();await loadDashboard();if($('dresses').classList.contains('active-section'))await loadDresses()};
+function renderAll(){renderDashboard();renderDresses();renderCustomers();renderBookings();renderPrep();renderBranches();renderFinance()}
+function table(headers,rows){return `<div class="tablewrap"><table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows||`<tr><td colspan="${headers.length}">لا توجد بيانات</td></tr>`}</tbody></table></div>`}
 
-document.querySelectorAll('nav button').forEach(btn=>btn.onclick=async()=>{
-  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');
-  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active-section'));
-  const id=btn.dataset.section;$(id).classList.add('active-section');$('pageTitle').textContent=btn.textContent;
-  if(id==='dresses')await loadDresses();
-  if(id==='customers')await loadSimple('customers','customersTable','full_name,mobile,national_id,address');
-  if(id==='branches')await loadSimple('branches','branchesTable','name,active');
-  if(id==='preparation')await loadSimple('preparation_tasks','prepTable','stage_name,status,responsible_name,started_at,completed_at');
-  if(id==='finance')await loadSimple('payments','paymentsTable','amount,payment_type,payment_method,paid_at,notes');
-});
-
-async function loadLookups(){
-  const [b,c]=await Promise.all([
-    sb.from('branches').select('id,name,active').eq('active',true).order('name'),
-    sb.from('categories').select('id,name,parent_id,active').eq('active',true).order('sort_order').order('name')
-  ]);
-  if(!b.error)branches=b.data||[]; if(!c.error)categories=c.data||[];
-  $('dressBranch').innerHTML='<option value="">اختر الفرع</option>'+branches.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('');
-  $('dressCategory').innerHTML='<option value="">بدون تصنيف</option>'+categories.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('');
-}
-async function countTable(t,id){
-  const {count,error}=await sb.from(t).select('*',{count:'exact',head:true});
-  $(id).textContent=error?'—':(count??0);
-}
-async function loadDashboard(){
-  await Promise.all([countTable('dresses','dressCount'),countTable('bookings','bookingCount'),countTable('customers','customerCount'),countTable('branches','branchCount')]);
-}
-async function loadSimple(table,target,cols){
-  const {data,error}=await sb.from(table).select(cols).limit(100);
-  if(error){$(target).innerHTML=`<div class="msg error">${esc(error.message)}</div>`;return}
-  if(!data?.length){$(target).innerHTML='<div class="empty">لا توجد بيانات</div>';return}
-  const keys=Object.keys(data[0]);
-  $(target).innerHTML=`<div class="table-wrap"><table><thead><tr>${keys.map(k=>`<th>${esc(k)}</th>`).join('')}</tr></thead><tbody>${data.map(r=>`<tr>${keys.map(k=>`<td>${esc(r[k])}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+function renderDashboard(){
+ const today=new Date().toISOString().slice(0,10),available=S.dresses.filter(x=>x.status==='available').length,pending=S.prep.filter(x=>!['done','skipped'].includes(x.status)).length;
+ const inPay=S.payments.filter(x=>x.payment_type!=='deposit_refund').reduce((a,x)=>a+Number(x.amount||0),0),out=S.expenses.reduce((a,x)=>a+Number(x.amount||0),0)+S.dressExpenses.reduce((a,x)=>a+Number(x.amount||0),0);
+ const stats=[['إجمالي الفساتين',S.dresses.length],['متاح',available],['الحجوزات',S.bookings.length],['العملاء',S.customers.length],['مهام تجهيز',pending],['التحصيلات',money(inPay)],['المصروفات',money(out)],['الفروع',S.branches.length]];
+ $('stats').innerHTML=stats.map(x=>`<div class="card stat"><small>${x[0]}</small><strong>${x[1]}</strong></div>`).join('');
+ const todays=S.bookings.filter(x=>x.event_date===today).length,pickups=S.bookings.filter(x=>(x.pickup_at||'').slice(0,10)===today).length,returns=S.bookings.filter(x=>(x.expected_return_at||'').slice(0,10)===today).length;
+ $('todaySummary').innerHTML=`مناسبات اليوم: <b>${todays}</b> — استلامات اليوم: <b>${pickups}</b> — مرتجعات اليوم: <b>${returns}</b> — تجهيز مفتوح: <b>${pending}</b>`;
 }
 
-async function loadDresses(){
-  hideMsg($('dressesMsg'));
-  const {data,error}=await sb.from('dresses')
-    .select('id,dress_code,name,category_id,current_branch_id,size,color,purchase_price,purchase_date,supplier,default_rental_price,sale_price,default_deposit,status,photo_url,notes,created_at,updated_at')
-    .order('created_at',{ascending:false});
-  if(error){showMsg($('dressesMsg'),'تعذر تحميل الفساتين: '+error.message,'error');return}
-  dresses=data||[]; renderDresses();
-}
 function renderDresses(){
-  const q=$('dressSearch').value.trim().toLowerCase(),status=$('dressStatusFilter').value;
-  const rows=dresses.filter(d=>{
-    const txt=[d.dress_code,d.name,d.color,d.size,d.supplier].join(' ').toLowerCase();
-    return (!q||txt.includes(q)) && (!status||d.status===status);
-  });
-  $('dressResultCount').textContent=`${rows.length} فستان`;
-  if(!rows.length){$('dressesTable').innerHTML='<div class="empty">لا توجد فساتين مطابقة</div>';return}
-  $('dressesTable').innerHTML=`<table><thead><tr>
-    <th>الكود</th><th>الاسم</th><th>الفرع</th><th>المقاس</th><th>اللون</th><th>الإيجار</th><th>التأمين</th><th>الحالة</th><th>إجراء</th>
-  </tr></thead><tbody>${rows.map(d=>{
-    const br=branches.find(x=>String(x.id)===String(d.current_branch_id));
-    return `<tr>
-      <td><b>${esc(d.dress_code)}</b></td><td>${esc(d.name||'')}</td><td>${esc(br?.name||'')}</td><td>${esc(d.size||'')}</td><td>${esc(d.color||'')}</td>
-      <td>${money(d.default_rental_price)}</td><td>${money(d.default_deposit)}</td><td><span class="pill ${esc(d.status)}">${esc(statusAr[d.status]||d.status)}</span></td>
-      <td><div class="row-actions"><button class="btn light" onclick="editDress('${d.id}')">تعديل</button></div></td>
-    </tr>`;
-  }).join('')}</tbody></table>`;
+ const q=($('dressSearch')?.value||'').toLowerCase(),f=$('dressFilter')?.value||'';
+ const arr=S.dresses.filter(d=>(!f||d.status===f)&&(!q||[d.dress_code,d.name,d.color,d.size].join(' ').toLowerCase().includes(q)));
+ $('dressesTable').innerHTML=table(['الكود','الوصف','الفرع','المقاس','اللون','الإيجار','التأمين','الحالة','إجراء'],arr.map(d=>`<tr><td><b>${esc(d.dress_code)}</b></td><td>${esc(d.name||'')}</td><td>${esc(branchName(d.current_branch_id))}</td><td>${esc(d.size||'')}</td><td>${esc(d.color||'')}</td><td>${money(d.default_rental_price)}</td><td>${money(d.default_deposit)}</td><td><span class="pill">${esc(statusAr[d.status]||d.status)}</span></td><td><div class="rowactions"><button class="btn light" onclick="dressForm('${d.id}')">تعديل</button><button class="btn light" onclick="transferDress('${d.id}')">نقل</button></div></td></tr>`).join(''));
 }
-$('dressSearch').oninput=renderDresses;$('dressStatusFilter').onchange=renderDresses;
-
-function resetDressForm(){
-  $('dressForm').reset();$('dressId').value='';$('purchasePrice').value='0';$('rentalPrice').value='0';$('deposit').value='0';$('dressStatus').value='available';hideMsg($('dressFormMsg'));
+function dressForm(id=''){
+ const d=S.dresses.find(x=>x.id===id)||{},bo=S.branches.filter(x=>x.active).map(x=>`<option value="${x.id}" ${String(x.id)===String(d.current_branch_id)?'selected':''}>${esc(x.name)}</option>`).join(''),co=S.categories.filter(x=>x.active).map(x=>`<option value="${x.id}" ${String(x.id)===String(d.category_id)?'selected':''}>${esc(x.name)}</option>`).join('');
+ openModal(id?'تعديل فستان':'إضافة فستان',`<form id="dressForm" class="forms">
+ <div class="field"><label>الكود *</label><input id="dfCode" value="${esc(d.dress_code||'')}" required></div><div class="field"><label>الوصف</label><input id="dfName" value="${esc(d.name||'')}"></div><div class="field"><label>التصنيف</label><select id="dfCat"><option value="">بدون</option>${co}</select></div>
+ <div class="field"><label>الفرع *</label><select id="dfBranch">${bo}</select></div><div class="field"><label>المقاس</label><input id="dfSize" value="${esc(d.size||'')}"></div><div class="field"><label>اللون</label><input id="dfColor" value="${esc(d.color||'')}"></div>
+ <div class="field"><label>سعر الشراء</label><input id="dfBuy" type="number" value="${d.purchase_price||0}"></div><div class="field"><label>تاريخ الشراء</label><input id="dfBuyDate" type="date" value="${d.purchase_date||''}"></div><div class="field"><label>المورد</label><input id="dfSupplier" value="${esc(d.supplier||'')}"></div>
+ <div class="field"><label>الإيجار</label><input id="dfRent" type="number" value="${d.default_rental_price||0}"></div><div class="field"><label>التأمين</label><input id="dfDep" type="number" value="${d.default_deposit||0}"></div><div class="field"><label>سعر البيع</label><input id="dfSale" type="number" value="${d.sale_price??''}"></div>
+ <div class="field"><label>الحالة</label><select id="dfStatus">${Object.entries(statusAr).slice(0,7).map(([k,v])=>`<option value="${k}" ${d.status===k?'selected':''}>${v}</option>`).join('')}</select></div><div class="field wide"><label>رابط الصورة</label><input id="dfPhoto" value="${esc(d.photo_url||'')}"></div>
+ <div class="field full"><label>ملاحظات</label><textarea id="dfNotes">${esc(d.notes||'')}</textarea></div><div class="full"><button class="btn">حفظ</button></div></form>`);
+ $('dressForm').onsubmit=async e=>{e.preventDefault();const p={dress_code:$('dfCode').value.trim(),name:$('dfName').value.trim()||null,category_id:$('dfCat').value?+$('dfCat').value:null,current_branch_id:+$('dfBranch').value,size:$('dfSize').value.trim()||null,color:$('dfColor').value.trim()||null,purchase_price:+$('dfBuy').value||0,purchase_date:$('dfBuyDate').value||null,supplier:$('dfSupplier').value.trim()||null,default_rental_price:+$('dfRent').value||0,default_deposit:+$('dfDep').value||0,sale_price:$('dfSale').value===''?null:+$('dfSale').value,status:$('dfStatus').value,photo_url:$('dfPhoto').value.trim()||null,notes:$('dfNotes').value.trim()||null,updated_at:new Date().toISOString()};const r=id?await sb.from('dresses').update(p).eq('id',id).select().single():await sb.from('dresses').insert(p).select().single();if(r.error)return alert(r.error.message);await audit(id?'update':'insert','dresses',r.data.id,{dress_code:r.data.dress_code});closeModal();await refreshAll()}
 }
-$('addDressBtn').onclick=()=>{resetDressForm();$('dressModalTitle').textContent='إضافة فستان جديد';$('dressModal').classList.remove('hidden')};
-$('closeDressModal').onclick=$('cancelDressBtn').onclick=()=>$('dressModal').classList.add('hidden');
-window.editDress=id=>{
-  const d=dresses.find(x=>x.id===id);if(!d)return;
-  resetDressForm();$('dressModalTitle').textContent='تعديل الفستان';
-  $('dressId').value=d.id;$('dressCode').value=d.dress_code||'';$('dressName').value=d.name||'';$('dressCategory').value=d.category_id||'';
-  $('dressBranch').value=d.current_branch_id||'';$('dressSize').value=d.size||'';$('dressColor').value=d.color||'';
-  $('purchasePrice').value=d.purchase_price??0;$('purchaseDate').value=d.purchase_date||'';$('supplier').value=d.supplier||'';
-  $('rentalPrice').value=d.default_rental_price??0;$('deposit').value=d.default_deposit??0;$('salePrice').value=d.sale_price??'';
-  $('dressStatus').value=d.status||'available';$('photoUrl').value=d.photo_url||'';$('dressNotes').value=d.notes||'';
-  $('dressModal').classList.remove('hidden');
-};
-$('dressForm').onsubmit=async e=>{
-  e.preventDefault();hideMsg($('dressFormMsg'));
-  const payload={
-    dress_code:$('dressCode').value.trim(),
-    name:$('dressName').value.trim()||null,
-    category_id:$('dressCategory').value?Number($('dressCategory').value):null,
-    current_branch_id:Number($('dressBranch').value),
-    size:$('dressSize').value.trim()||null,color:$('dressColor').value.trim()||null,
-    purchase_price:Number($('purchasePrice').value||0),purchase_date:$('purchaseDate').value||null,supplier:$('supplier').value.trim()||null,
-    default_rental_price:Number($('rentalPrice').value||0),default_deposit:Number($('deposit').value||0),
-    sale_price:$('salePrice').value===''?null:Number($('salePrice').value),
-    status:$('dressStatus').value,photo_url:$('photoUrl').value.trim()||null,notes:$('dressNotes').value.trim()||null,
-    updated_at:new Date().toISOString()
-  };
-  if(!payload.dress_code||!payload.current_branch_id)return showMsg($('dressFormMsg'),'كود الفستان والفرع مطلوبان','error');
-  const id=$('dressId').value;
-  const res=id?await sb.from('dresses').update(payload).eq('id',id):await sb.from('dresses').insert(payload);
-  if(res.error)return showMsg($('dressFormMsg'),'تعذر الحفظ: '+res.error.message,'error');
-  showMsg($('dressFormMsg'),'تم الحفظ بنجاح','ok');
-  await loadDresses();await loadDashboard();
-  setTimeout(()=>$('dressModal').classList.add('hidden'),450);
-};
+window.dressForm=dressForm;
+function transferDress(id){const d=S.dresses.find(x=>x.id===id);openModal('نقل فستان',`<form id="trForm" class="forms"><div class="field"><label>الفستان</label><input value="${esc(d.dress_code)}" disabled></div><div class="field"><label>إلى فرع</label><select id="trTo">${S.branches.filter(x=>x.active&&x.id!==d.current_branch_id).map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('')}</select></div><div class="field"><label>السبب</label><input id="trReason"></div><div class="full"><button class="btn">تنفيذ النقل</button></div></form>`);$('trForm').onsubmit=async e=>{e.preventDefault();const to=+$('trTo').value;const {data,error}=await sb.from('dress_transfers').insert({dress_id:id,from_branch_id:d.current_branch_id,to_branch_id:to,reason:$('trReason').value.trim()||null}).select().single();if(error)return alert(error.message);const u=await sb.from('dresses').update({current_branch_id:to,updated_at:new Date().toISOString()}).eq('id',id);if(u.error)return alert(u.error.message);await audit('transfer','dresses',id,{to_branch_id:to});closeModal();await refreshAll()}}
+window.transferDress=transferDress;
 
-boot();
+function renderCustomers(){$('customersTable').innerHTML=table(['الاسم','الموبايل','الرقم القومي','العنوان','المقاسات','إجراء'],S.customers.map(c=>`<tr><td>${esc(c.full_name)}</td><td>${esc(c.mobile)}</td><td>${esc(c.national_id||'')}</td><td>${esc(c.address||'')}</td><td>${esc(c.measurements||'')}</td><td><button class="btn light" onclick="customerForm('${c.id}')">تعديل</button></td></tr>`).join(''))}
+function customerForm(id=''){const c=S.customers.find(x=>x.id===id)||{};openModal(id?'تعديل عميل':'إضافة عميل',`<form id="cf" class="forms"><div class="field"><label>الاسم *</label><input id="cfName" value="${esc(c.full_name||'')}"></div><div class="field"><label>الموبايل *</label><input id="cfMobile" value="${esc(c.mobile||'')}"></div><div class="field"><label>الرقم القومي</label><input id="cfNat" value="${esc(c.national_id||'')}"></div><div class="field wide"><label>العنوان</label><input id="cfAddr" value="${esc(c.address||'')}"></div><div class="field"><label>المقاسات</label><input id="cfMeas" value="${esc(c.measurements||'')}"></div><div class="field full"><label>ملاحظات</label><textarea id="cfNotes">${esc(c.notes||'')}</textarea></div><div class="full"><button class="btn">حفظ</button></div></form>`);$('cf').onsubmit=async e=>{e.preventDefault();const p={full_name:$('cfName').value.trim(),mobile:$('cfMobile').value.trim(),national_id:$('cfNat').value.trim()||null,address:$('cfAddr').value.trim()||null,measurements:$('cfMeas').value.trim()||null,notes:$('cfNotes').value.trim()||null};if(!p.full_name||!p.mobile)return alert('الاسم والموبايل مطلوبان');const r=id?await sb.from('customers').update(p).eq('id',id).select().single():await sb.from('customers').insert(p).select().single();if(r.error)return alert(r.error.message);await audit(id?'update':'insert','customers',r.data.id);closeModal();await refreshAll()}}
+window.customerForm=customerForm;
+
+function renderBookings(){$('bookingsTable').innerHTML=table(['الإيصال','العميل','الفرع','المناسبة','الاستلام','الإرجاع','الإيجار','التأمين','المدفوع','المتبقي','الحالة','إجراء'],S.bookings.map(b=>`<tr><td>${b.receipt_no}</td><td>${esc(customerName(b.customer_id))}</td><td>${esc(branchName(b.booking_branch_id))}</td><td>${esc(b.event_date)}</td><td>${new Date(b.pickup_at).toLocaleString('ar-EG')}</td><td>${new Date(b.expected_return_at).toLocaleString('ar-EG')}</td><td>${money(b.rental_total)}</td><td>${money(b.deposit_total)}</td><td>${money(b.paid_amount)}</td><td>${money(b.balance_amount)}</td><td><span class="pill">${esc(statusAr[b.status]||b.status)}</span></td><td><div class="rowactions"><button class="btn light" onclick="bookingDetails('${b.id}')">فتح</button></div></td></tr>`).join(''))}
+function newBooking(){
+ const cust=S.customers.map(x=>`<option value="${x.id}">${esc(x.full_name)} — ${esc(x.mobile)}</option>`).join(''),branches=S.branches.filter(x=>x.active).map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join(''),dress=S.dresses.filter(x=>x.status==='available').map(x=>`<option value="${x.id}" data-rent="${x.default_rental_price}" data-dep="${x.default_deposit}">${esc(x.dress_code)} — ${esc(x.name||'')}</option>`).join('');
+ openModal('حجز جديد',`<form id="bkf"><div class="forms"><div class="field"><label>العميل</label><select id="bkCust">${cust}</select></div><div class="field"><label>الفرع</label><select id="bkBranch">${branches}</select></div><div class="field"><label>تاريخ المناسبة</label><input id="bkEvent" type="date"></div><div class="field"><label>البروفة</label><input id="bkFit" type="datetime-local"></div><div class="field"><label>الاستلام</label><input id="bkPickup" type="datetime-local"></div><div class="field"><label>الإرجاع المتوقع</label><input id="bkReturn" type="datetime-local"></div></div><h4>الفساتين</h4><div id="bkItems"></div><button type="button" id="addBkItem" class="btn light">+ إضافة فستان للحجز</button><div class="forms" style="margin-top:10px"><div class="field"><label>نوع الخصم</label><select id="bkDiscType"><option value="">بدون</option><option value="percent">نسبة %</option><option value="fixed">قيمة ثابتة</option></select></div><div class="field"><label>قيمة الخصم</label><input id="bkDiscVal" type="number" value="0"></div><div class="field"><label>ملاحظات</label><input id="bkNotes"></div></div><div class="full" style="margin-top:10px"><button class="btn">إنشاء الحجز</button></div></form>`);
+ function addItem(){const i=document.createElement('div');i.className='forms bkitem';i.innerHTML=`<div class="field"><label>الفستان</label><select class="itDress">${dress}</select></div><div class="field"><label>الإيجار</label><input class="itRent" type="number" value="0"></div><div class="field"><label>التأمين</label><input class="itDep" type="number" value="0"></div><div class="field"><label>فرع الاستلام</label><select class="itPick">${branches}</select></div><div class="field"><label>فرع الإرجاع</label><select class="itRet">${branches}</select></div><div class="field"><label>Buffer تجهيز أيام</label><input class="itBuf" type="number" value="3"></div>`;$('bkItems').appendChild(i);const s=i.querySelector('.itDress'),sync=()=>{const o=s.options[s.selectedIndex];i.querySelector('.itRent').value=o?.dataset.rent||0;i.querySelector('.itDep').value=o?.dataset.dep||0};s.onchange=sync;sync()} addItem();$('addBkItem').onclick=addItem;
+ $('bkf').onsubmit=async e=>{e.preventDefault();const items=[...document.querySelectorAll('.bkitem')].map(i=>({dress_id:i.querySelector('.itDress').value,rental_price:+i.querySelector('.itRent').value||0,deposit_amount:+i.querySelector('.itDep').value||0,pickup_branch_id:+i.querySelector('.itPick').value,return_branch_id:+i.querySelector('.itRet').value,prep_buffer_days:+i.querySelector('.itBuf').value||3})).filter(x=>x.dress_id);if(!items.length)return alert('أضف فستان');const sub=items.reduce((a,x)=>a+x.rental_price,0),dep=items.reduce((a,x)=>a+x.deposit_amount,0),type=$('bkDiscType').value,val=+$('bkDiscVal').value||0,disc=type==='percent'?sub*val/100:type==='fixed'?Math.min(sub,val):0,total=Math.max(0,sub-disc);const b={customer_id:$('bkCust').value,booking_branch_id:+$('bkBranch').value,event_date:$('bkEvent').value,fitting_at:$('bkFit').value?new Date($('bkFit').value).toISOString():null,pickup_at:new Date($('bkPickup').value).toISOString(),expected_return_at:new Date($('bkReturn').value).toISOString(),discount_enabled:!!type,discount_type:type||null,discount_value:val,rental_subtotal:sub,discount_amount:disc,rental_total:total,deposit_total:dep,paid_amount:0,balance_amount:total+dep,status:'reserved',notes:$('bkNotes').value.trim()||null};const r=await sb.from('bookings').insert(b).select().single();if(r.error)return alert(r.error.message);const rows=items.map(x=>({...x,booking_id:r.data.id}));const r2=await sb.from('booking_dresses').insert(rows).select();if(r2.error){await sb.from('bookings').delete().eq('id',r.data.id);return alert(r2.error.message)}await sb.from('dresses').update({status:'booked'}).in('id',items.map(x=>x.dress_id));await audit('insert','bookings',r.data.id,{receipt_no:r.data.receipt_no});closeModal();await refreshAll()}
+}
+window.newBooking=newBooking;
+function bookingDetails(id){const b=S.bookings.find(x=>x.id===id),items=S.bookingDresses.filter(x=>x.booking_id===id);openModal('الحجز رقم '+b.receipt_no,`<div class="grid"><div class="card stat"><small>الإيجار</small><strong>${money(b.rental_total)}</strong></div><div class="card stat"><small>التأمين</small><strong>${money(b.deposit_total)}</strong></div><div class="card stat"><small>المدفوع</small><strong>${money(b.paid_amount)}</strong></div><div class="card stat"><small>المتبقي</small><strong>${money(b.balance_amount)}</strong></div></div><div style="margin-top:12px">${table(['الفستان','الإيجار','التأمين','استلام','إرجاع'],items.map(x=>`<tr><td>${esc(dressName(x.dress_id))}</td><td>${money(x.rental_price)}</td><td>${money(x.deposit_amount)}</td><td>${esc(branchName(x.pickup_branch_id))}</td><td>${esc(branchName(x.return_branch_id))}</td></tr>`).join(''))}</div><div class="toolbar" style="margin-top:12px"><button class="btn" onclick="setBookingStatus('${id}','confirmed')">تأكيد</button><button class="btn" onclick="setBookingStatus('${id}','picked_up')">تم الاستلام</button><button class="btn" onclick="returnBooking('${id}')">إرجاع</button><button class="btn alt" onclick="setBookingStatus('${id}','completed')">إكمال</button><button class="btn danger" onclick="setBookingStatus('${id}','cancelled')">إلغاء</button></div>`)}
+window.bookingDetails=bookingDetails;
+async function setBookingStatus(id,status){const r=await sb.from('bookings').update({status}).eq('id',id);if(r.error)return alert(r.error.message);if(status==='picked_up'){const ids=S.bookingDresses.filter(x=>x.booking_id===id).map(x=>x.dress_id);await sb.from('dresses').update({status:'rented'}).in('id',ids)}if(status==='cancelled'){const ids=S.bookingDresses.filter(x=>x.booking_id===id).map(x=>x.dress_id);await sb.from('dresses').update({status:'available'}).in('id',ids)}await audit('status','bookings',id,{status});closeModal();await refreshAll()}
+window.setBookingStatus=setBookingStatus;
+async function returnBooking(id){const b=S.bookings.find(x=>x.id===id),items=S.bookingDresses.filter(x=>x.booking_id===id);const r=await sb.from('bookings').update({status:'returned',actual_return_at:new Date().toISOString()}).eq('id',id);if(r.error)return alert(r.error.message);for(const it of items){await sb.from('dresses').update({status:'preparation',current_branch_id:it.return_branch_id}).eq('id',it.dress_id);const stages=['استلام وفحص','تنظيف','كي وتجهيز','إصلاحات','تصوير/فحص نهائي','تغليف','جاهز للإتاحة'];await sb.from('preparation_tasks').insert(stages.map((s,i)=>({booking_dress_id:it.id,stage_no:i+1,stage_name:s,status:'pending'})))}await audit('return','bookings',id);closeModal();await refreshAll()}
+window.returnBooking=returnBooking;
+
+function renderPrep(){$('prepTable').innerHTML=table(['الفستان','المرحلة','الحالة','المسؤول','بدأ','اكتمل','إجراء'],S.prep.map(p=>{const bd=S.bookingDresses.find(x=>x.id===p.booking_dress_id);return `<tr><td>${esc(dressName(bd?.dress_id))}</td><td>${esc(p.stage_name)}</td><td>${esc(statusAr[p.status]||p.status)}</td><td>${esc(p.responsible_name||'')}</td><td>${p.started_at?new Date(p.started_at).toLocaleString('ar-EG'):'—'}</td><td>${p.completed_at?new Date(p.completed_at).toLocaleString('ar-EG'):'—'}</td><td><button class="btn light" onclick="prepAction('${p.id}')">تحديث</button></td></tr>`}).join(''))}
+function prepAction(id){const p=S.prep.find(x=>x.id===id);openModal('تحديث مرحلة تجهيز',`<form id="pf" class="forms"><div class="field"><label>الحالة</label><select id="pfStatus">${['pending','in_progress','done','skipped'].map(x=>`<option value="${x}" ${p.status===x?'selected':''}>${statusAr[x]}</option>`).join('')}</select></div><div class="field"><label>المسؤول</label><input id="pfResp" value="${esc(p.responsible_name||'')}"></div><div class="field wide"><label>ملاحظات</label><input id="pfNotes" value="${esc(p.notes||'')}"></div><div class="full"><button class="btn">حفظ</button></div></form>`);$('pf').onsubmit=async e=>{e.preventDefault();const s=$('pfStatus').value,u={status:s,responsible_name:$('pfResp').value.trim()||null,notes:$('pfNotes').value.trim()||null};if(s==='in_progress'&&!p.started_at)u.started_at=new Date().toISOString();if(s==='done')u.completed_at=new Date().toISOString();const r=await sb.from('preparation_tasks').update(u).eq('id',id);if(r.error)return alert(r.error.message);const bd=S.bookingDresses.find(x=>x.id===p.booking_dress_id),related=S.prep.filter(x=>x.booking_dress_id===p.booking_dress_id);const allDone=related.every(x=>x.id===id?['done','skipped'].includes(s):['done','skipped'].includes(x.status));if(allDone&&bd)await sb.from('dresses').update({status:'available'}).eq('id',bd.dress_id);closeModal();await refreshAll()}}
+window.prepAction=prepAction;
+
+function renderBranches(){$('branchesTable').innerHTML=table(['الفرع','الحالة','إجراء'],S.branches.map(b=>`<tr><td>${esc(b.name)}</td><td>${b.active?'نشط':'موقوف'}</td><td>${roleCanManage()?`<button class="btn light" onclick="toggleBranch(${b.id},${!b.active})">${b.active?'إيقاف':'تفعيل'}</button>`:''}</td></tr>`).join(''))}
+function newBranch(){openModal('إضافة فرع',`<form id="brf" class="forms"><div class="field wide"><label>اسم الفرع</label><input id="brName"></div><div><button class="btn">حفظ</button></div></form>`);$('brf').onsubmit=async e=>{e.preventDefault();const r=await sb.from('branches').insert({name:$('brName').value.trim()}).select().single();if(r.error)return alert(r.error.message);closeModal();await refreshAll()}}
+window.newBranch=newBranch;window.toggleBranch=async(id,v)=>{const r=await sb.from('branches').update({active:v}).eq('id',id);if(r.error)return alert(r.error.message);await refreshAll()}
+
+function renderFinance(){
+ const income=S.payments.filter(x=>x.payment_type!=='deposit_refund').reduce((a,x)=>a+Number(x.amount||0),0),refund=S.payments.filter(x=>x.payment_type==='deposit_refund').reduce((a,x)=>a+Number(x.amount||0),0),exp=S.expenses.reduce((a,x)=>a+Number(x.amount||0),0),dexp=S.dressExpenses.reduce((a,x)=>a+Number(x.amount||0),0),sales=S.sales.reduce((a,x)=>a+Number(x.sale_amount||0),0);
+ $('financeStats').innerHTML=[['التحصيلات',money(income)],['رد التأمينات',money(refund)],['مصروفات عامة',money(exp)],['مصروفات فساتين',money(dexp)],['المبيعات',money(sales)]].map(x=>`<div class="card stat"><small>${x[0]}</small><strong>${x[1]}</strong></div>`).join('');
+ $('paymentsTable').innerHTML=table(['التاريخ','الفرع','النوع','القيمة','طريقة الدفع','الحجز'],S.payments.map(x=>`<tr><td>${new Date(x.paid_at).toLocaleString('ar-EG')}</td><td>${esc(branchName(x.branch_id))}</td><td>${esc(x.payment_type)}</td><td>${money(x.amount)}</td><td>${esc(x.payment_method||'')}</td><td>${esc(S.bookings.find(b=>b.id===x.booking_id)?.receipt_no||'')}</td></tr>`).join(''));
+ $('expensesTable').innerHTML=table(['التاريخ','الفرع','البند','القيمة','البيان'],S.expenses.map(x=>`<tr><td>${x.expense_date}</td><td>${esc(branchName(x.branch_id))}</td><td>${esc(x.category)}</td><td>${money(x.amount)}</td><td>${esc(x.description||'')}</td></tr>`).join(''));
+ $('dressExpensesTable').innerHTML=table(['التاريخ','الفستان','الفرع','النوع','القيمة','ملاحظات'],S.dressExpenses.map(x=>`<tr><td>${x.expense_date}</td><td>${esc(dressName(x.dress_id))}</td><td>${esc(branchName(x.branch_id))}</td><td>${esc(x.expense_type)}</td><td>${money(x.amount)}</td><td>${esc(x.notes||'')}</td></tr>`).join(''));
+ $('salesTable').innerHTML=table(['التاريخ','الفستان','العميل','الفرع','قيمة البيع','المدفوع'],S.sales.map(x=>`<tr><td>${new Date(x.sold_at).toLocaleString('ar-EG')}</td><td>${esc(dressName(x.dress_id))}</td><td>${esc(customerName(x.customer_id))}</td><td>${esc(branchName(x.branch_id))}</td><td>${money(x.sale_amount)}</td><td>${money(x.paid_amount)}</td></tr>`).join(''));
+}
+function paymentForm(){openModal('تسجيل تحصيل',`<form id="payf" class="forms"><div class="field"><label>الحجز</label><select id="payBooking"><option value="">بدون</option>${S.bookings.map(b=>`<option value="${b.id}">${b.receipt_no} - ${esc(customerName(b.customer_id))}</option>`).join('')}</select></div><div class="field"><label>الفرع</label><select id="payBranch">${S.branches.filter(x=>x.active).map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('')}</select></div><div class="field"><label>النوع</label><select id="payType"><option value="rental">إيجار</option><option value="deposit">تأمين</option><option value="deposit_refund">رد تأمين</option><option value="damage_deduction">خصم تلف</option><option value="other">أخرى</option></select></div><div class="field"><label>القيمة</label><input id="payAmount" type="number"></div><div class="field"><label>طريقة الدفع</label><input id="payMethod"></div><div class="field"><label>ملاحظات</label><input id="payNotes"></div><div class="full"><button class="btn">حفظ</button></div></form>`);$('payf').onsubmit=async e=>{e.preventDefault();const booking_id=$('payBooking').value||null,p={booking_id,branch_id:+$('payBranch').value,amount:+$('payAmount').value,payment_type:$('payType').value,payment_method:$('payMethod').value.trim()||null,notes:$('payNotes').value.trim()||null};const r=await sb.from('payments').insert(p).select().single();if(r.error)return alert(r.error.message);if(booking_id){const b=S.bookings.find(x=>x.id===booking_id);let paid=Number(b.paid_amount||0),bal=Number(b.balance_amount||0);if(p.payment_type==='deposit_refund')paid-=p.amount;else{paid+=p.amount;bal=Math.max(0,bal-p.amount)}await sb.from('bookings').update({paid_amount:paid,balance_amount:bal}).eq('id',booking_id)}closeModal();await refreshAll()}}
+window.paymentForm=paymentForm;
+function expenseForm(){openModal('مصروف عام',`<form id="exf" class="forms"><div class="field"><label>الفرع</label><select id="exBranch">${S.branches.filter(x=>x.active).map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('')}</select></div><div class="field"><label>البند</label><input id="exCat"></div><div class="field"><label>القيمة</label><input id="exAmt" type="number"></div><div class="field wide"><label>البيان</label><input id="exDesc"></div><div><button class="btn">حفظ</button></div></form>`);$('exf').onsubmit=async e=>{e.preventDefault();const r=await sb.from('expenses').insert({branch_id:+$('exBranch').value,category:$('exCat').value.trim(),amount:+$('exAmt').value,description:$('exDesc').value.trim()||null}).select().single();if(r.error)return alert(r.error.message);closeModal();await refreshAll()}}
+window.expenseForm=expenseForm;
+function dressExpenseForm(){openModal('مصروف فستان',`<form id="def" class="forms"><div class="field"><label>الفستان</label><select id="deDress">${S.dresses.map(x=>`<option value="${x.id}">${esc(x.dress_code)} - ${esc(x.name||'')}</option>`).join('')}</select></div><div class="field"><label>الفرع</label><select id="deBranch">${S.branches.filter(x=>x.active).map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('')}</select></div><div class="field"><label>النوع</label><input id="deType" placeholder="تنظيف / إصلاح / تعديل..."></div><div class="field"><label>القيمة</label><input id="deAmt" type="number"></div><div class="field wide"><label>ملاحظات</label><input id="deNotes"></div><div><button class="btn">حفظ</button></div></form>`);$('def').onsubmit=async e=>{e.preventDefault();const r=await sb.from('dress_expenses').insert({dress_id:$('deDress').value,branch_id:+$('deBranch').value,expense_type:$('deType').value.trim(),amount:+$('deAmt').value,notes:$('deNotes').value.trim()||null}).select().single();if(r.error)return alert(r.error.message);closeModal();await refreshAll()}}
+window.dressExpenseForm=dressExpenseForm;
+function saleForm(){openModal('بيع فستان',`<form id="sf" class="forms"><div class="field"><label>الفستان</label><select id="sfDress">${S.dresses.filter(x=>x.status!=='sold').map(x=>`<option value="${x.id}">${esc(x.dress_code)} - ${esc(x.name||'')}</option>`).join('')}</select></div><div class="field"><label>العميل</label><select id="sfCust"><option value="">بدون</option>${S.customers.map(x=>`<option value="${x.id}">${esc(x.full_name)}</option>`).join('')}</select></div><div class="field"><label>الفرع</label><select id="sfBranch">${S.branches.filter(x=>x.active).map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('')}</select></div><div class="field"><label>قيمة البيع</label><input id="sfAmt" type="number"></div><div class="field"><label>المدفوع</label><input id="sfPaid" type="number"></div><div class="field"><label>ملاحظات</label><input id="sfNotes"></div><div class="full"><button class="btn">حفظ</button></div></form>`);$('sf').onsubmit=async e=>{e.preventDefault();const dress_id=$('sfDress').value,r=await sb.from('sales').insert({dress_id,customer_id:$('sfCust').value||null,branch_id:+$('sfBranch').value,sale_amount:+$('sfAmt').value,paid_amount:+$('sfPaid').value||0,notes:$('sfNotes').value.trim()||null}).select().single();if(r.error)return alert(r.error.message);await sb.from('dresses').update({status:'sold'}).eq('id',dress_id);closeModal();await refreshAll()}}
+window.saleForm=saleForm;
+
+$('loginBtn').onclick=login;$('password').addEventListener('keydown',e=>{if(e.key==='Enter')login()});$('logoutBtn').onclick=async()=>{await sb.auth.signOut();location.reload()};$('refreshBtn').onclick=refreshAll;
+$('newDressBtn').onclick=()=>dressForm();$('newCustomerBtn').onclick=()=>customerForm();$('newBookingBtn').onclick=newBooking;$('newBranchBtn').onclick=newBranch;$('newPaymentBtn').onclick=paymentForm;$('newExpenseBtn').onclick=expenseForm;$('newDressExpenseBtn').onclick=dressExpenseForm;$('newSaleBtn').onclick=saleForm;
+$('dressSearch').oninput=renderDresses;$('dressFilter').onchange=renderDresses;
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('tabactive'));b.classList.add('tabactive');document.querySelectorAll('.tabpane').forEach(x=>x.classList.remove('active'));$(b.dataset.tab).classList.add('active')});
+sb.auth.getSession().then(({data})=>data.session?start():null);
 </script>
 </body>
 </html>
