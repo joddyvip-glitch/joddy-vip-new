@@ -194,6 +194,9 @@ function newBooking(){
  <div class="forms" style="margin-top:10px">
    <div class="field"><label>نوع الخصم</label><select id="bkDiscType"><option value="">بدون</option><option value="percent">نسبة %</option><option value="fixed">قيمة ثابتة</option></select></div>
    <div class="field"><label>قيمة الخصم</label><input id="bkDiscVal" type="number" value="0"></div>
+   <div class="field"><label>المبلغ المدفوع الآن</label><input id="bkPaid" type="number" value="0" min="0"></div>
+   <div class="field"><label>إجمالي المطلوب</label><input id="bkGrandTotal" type="number" value="0" disabled></div>
+   <div class="field"><label>المتبقي</label><input id="bkBalance" type="number" value="0" disabled></div>
    <div class="field"><label>ملاحظات الحجز</label><input id="bkNotes"></div>
  </div>
  <div class="full" style="margin-top:10px"><button class="btn">إنشاء الحجز</button></div>
@@ -211,7 +214,28 @@ function newBooking(){
    const sync=()=>{const o=s.options[s.selectedIndex];i.querySelector('.itRent').value=o?.dataset.rent||0;i.querySelector('.itDep').value=o?.dataset.dep||0};
    s.onchange=sync;sync();
  }
- addItem();$('addBkItem').onclick=addItem;
+ addItem();$('addBkItem').onclick=()=>{addItem();calcBookingTotals()};
+ function calcBookingTotals(){
+   const items=[...document.querySelectorAll('.bkitem')].map(i=>({
+     rental:+i.querySelector('.itRent').value||0,
+     dep:+i.querySelector('.itDep').value||0
+   }));
+   const sub=items.reduce((a,x)=>a+x.rental,0);
+   const dep=items.reduce((a,x)=>a+x.dep,0);
+   const type=$('bkDiscType').value,val=+$('bkDiscVal').value||0;
+   const disc=type==='percent'?sub*val/100:type==='fixed'?Math.min(sub,val):0;
+   const rentalTotal=Math.max(0,sub-disc);
+   const grand=rentalTotal+dep;
+   const paid=Math.max(0,+$('bkPaid').value||0);
+   const balance=Math.max(0,grand-paid);
+   $('bkGrandTotal').value=grand.toFixed(2);
+   $('bkBalance').value=balance.toFixed(2);
+ }
+ $('bkItems').addEventListener('input',calcBookingTotals);
+ $('bkDiscType').addEventListener('change',calcBookingTotals);
+ $('bkDiscVal').addEventListener('input',calcBookingTotals);
+ $('bkPaid').addEventListener('input',calcBookingTotals);
+ calcBookingTotals();
 
  $('bkf').onsubmit=async e=>{
    e.preventDefault();
@@ -250,6 +274,10 @@ function newBooking(){
    const sub=items.reduce((a,x)=>a+x.rental_price,0),dep=items.reduce((a,x)=>a+x.deposit_amount,0);
    const type=$('bkDiscType').value,val=+$('bkDiscVal').value||0;
    const disc=type==='percent'?sub*val/100:type==='fixed'?Math.min(sub,val):0,total=Math.max(0,sub-disc);
+   const grandTotal=total+dep;
+   const paidNow=Math.max(0,+$('bkPaid').value||0);
+   if(paidNow>grandTotal)return alert('المبلغ المدفوع لا يمكن أن يكون أكبر من إجمالي المطلوب');
+   const balanceNow=Math.max(0,grandTotal-paidNow);
    const b={
      customer_id:customer.id,booking_branch_id:+$('bkBranch').value,event_date:$('bkEvent').value,
      fitting_at:$('bkFit').value?new Date($('bkFit').value).toISOString():null,
@@ -257,14 +285,25 @@ function newBooking(){
      expected_return_at:new Date($('bkReturn').value).toISOString(),
      discount_enabled:!!type,discount_type:type||null,discount_value:val,
      rental_subtotal:sub,discount_amount:disc,rental_total:total,deposit_total:dep,
-     paid_amount:0,balance_amount:total+dep,status:'reserved',notes:$('bkNotes').value.trim()||null
+     paid_amount:paidNow,balance_amount:balanceNow,status:'reserved',notes:$('bkNotes').value.trim()||null
    };
    const r=await sb.from('bookings').insert(b).select().single();
    if(r.error)return alert(r.error.message);
    const r2=await sb.from('booking_dresses').insert(items.map(x=>({...x,booking_id:r.data.id}))).select();
    if(r2.error){await sb.from('bookings').delete().eq('id',r.data.id);return alert(r2.error.message)}
    await sb.from('dresses').update({status:'booked'}).in('id',items.map(x=>x.dress_id));
-   await audit('insert','bookings',r.data.id,{receipt_no:r.data.receipt_no,customer_id:customer.id});
+   if(paidNow>0){
+     const pr=await sb.from('payments').insert({
+       booking_id:r.data.id,
+       branch_id:+$('bkBranch').value,
+       amount:paidNow,
+       payment_type:'rental',
+       payment_method:'عند الحجز',
+       notes:'دفعة عند إنشاء الحجز'
+     });
+     if(pr.error)console.warn('تعذر تسجيل دفعة الحجز:',pr.error.message);
+   }
+   await audit('insert','bookings',r.data.id,{receipt_no:r.data.receipt_no,customer_id:customer.id,paid_amount:paidNow,balance_amount:balanceNow});
    closeModal();await refreshAll();
  }
 }
