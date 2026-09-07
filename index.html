@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Joddy VIP Dresses</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div id="loginView" class="centered">
+    <div class="card login-card">
+      <h1>Joddy VIP Dresses</h1>
+      <p>نظام إدارة الفساتين والإيجارات والفروع والمالية</p>
+      <input id="email" type="email" placeholder="البريد الإلكتروني" />
+      <input id="password" type="password" placeholder="كلمة المرور" />
+      <button id="loginBtn">دخول</button>
+      <div id="loginMsg" class="msg"></div>
+    </div>
+  </div>
+
+  <div id="appView" class="app hidden">
+    <aside class="sidebar">
+      <div class="brand">JODDY</div>
+      <nav>
+        <button data-section="dashboard" class="active">لوحة التحكم</button>
+        <button data-section="dresses">الفساتين</button>
+        <button data-section="bookings">الإيجارات</button>
+        <button data-section="customers">العملاء</button>
+        <button data-section="branches">الفروع</button>
+        <button data-section="preparation">التنظيف والتجهيز</button>
+        <button data-section="finance">المالية</button>
+      </nav>
+      <button id="logoutBtn" class="danger">تسجيل الخروج</button>
+    </aside>
+
+    <main class="content">
+      <header>
+        <div>
+          <h2 id="pageTitle">لوحة التحكم</h2>
+          <small id="userLabel"></small>
+        </div>
+        <button id="refreshBtn">تحديث</button>
+      </header>
+
+      <section id="dashboard" class="section active-section">
+        <div class="grid stats">
+          <div class="card"><span>الفساتين</span><strong id="dressCount">—</strong></div>
+          <div class="card"><span>الإيجارات</span><strong id="bookingCount">—</strong></div>
+          <div class="card"><span>العملاء</span><strong id="customerCount">—</strong></div>
+          <div class="card"><span>الفروع</span><strong id="branchCount">—</strong></div>
+          <div class="card"><span>مهام التجهيز</span><strong id="prepCount">—</strong></div>
+          <div class="card"><span>المدفوعات</span><strong id="paymentCount">—</strong></div>
+        </div>
+      </section>
+
+      <section id="dresses" class="section"><div class="card"><h3>الفساتين</h3><div id="dressesTable"></div></div></section>
+      <section id="bookings" class="section"><div class="card"><h3>الإيجارات</h3><div id="bookingsTable"></div></div></section>
+      <section id="customers" class="section"><div class="card"><h3>العملاء</h3><div id="customersTable"></div></div></section>
+      <section id="branches" class="section"><div class="card"><h3>الفروع</h3><div id="branchesTable"></div></div></section>
+      <section id="preparation" class="section"><div class="card"><h3>التنظيف والتجهيز</h3><div id="prepTable"></div></div></section>
+      <section id="finance" class="section"><div class="card"><h3>المالية</h3><div id="paymentsTable"></div></div></section>
+    </main>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
