@@ -94,6 +94,23 @@ const SUPABASE_KEY='sb_publishable_Q_HEnAkqk9jrMOjcF2krtA_KhTEZJaA';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const $=id=>document.getElementById(id), esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const money=v=>new Intl.NumberFormat('ar-EG',{maximumFractionDigits:2}).format(Number(v||0))+' ج.م';
+function formatDMY(v){
+ if(!v)return '—';
+ const s=String(v).slice(0,10),m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+ if(m)return `${m[3]}/${m[2]}/${m[1]}`;
+ const d=new Date(v);if(isNaN(d))return esc(v);
+ return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+}
+function parseDMY(v){
+ const m=String(v||'').trim().match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+ if(!m)return null;
+ const dd=+m[1],mm=+m[2],yy=+m[3],d=new Date(yy,mm-1,dd);
+ if(d.getFullYear()!==yy||d.getMonth()!==mm-1||d.getDate()!==dd)return null;
+ return `${yy}-${String(mm).padStart(2,'0')}-${String(dd).padStart(2,'0')}`;
+}
+function dateOnlyIso(ymd){return ymd?new Date(ymd+'T12:00:00').toISOString():null}
+function addDaysYMD(ymd,days){const d=new Date(ymd+'T12:00:00');d.setDate(d.getDate()+Number(days||0));return d.toISOString().slice(0,10)}
+
 const labels={dashboard:'لوحة التحكم',dresses:'الفساتين',bookings:'الحجوزات والإيجارات',customers:'العملاء',preparation:'التنظيف والتجهيز',branches:'الفروع',finance:'المالية'};
 const statusAr={available:'متاح',booked:'محجوز',rented:'مؤجر',preparation:'تجهيز',maintenance:'صيانة',sold:'مباع',inactive:'غير نشط',reserved:'محجوز',confirmed:'مؤكد',picked_up:'تم الاستلام',returned:'تم الإرجاع',cancelled:'ملغي',completed:'مكتمل',pending:'معلق',in_progress:'جاري',done:'تم',skipped:'متخطى'};
 let S={profile:null,branches:[],categories:[],dresses:[],customers:[],bookings:[],bookingDresses:[],prep:[],payments:[],expenses:[],dressExpenses:[],sales:[],transfers:[]};
@@ -165,11 +182,18 @@ function renderCustomers(){$('customersTable').innerHTML=table(['الاسم','ا
 function customerForm(id=''){const c=S.customers.find(x=>x.id===id)||{};openModal(id?'تعديل عميل':'إضافة عميل',`<form id="cf" class="forms"><div class="field"><label>الاسم *</label><input id="cfName" value="${esc(c.full_name||'')}"></div><div class="field"><label>الموبايل *</label><input id="cfMobile" value="${esc(c.mobile||'')}"></div><div class="field"><label>الرقم القومي</label><input id="cfNat" value="${esc(c.national_id||'')}"></div><div class="field wide"><label>العنوان</label><input id="cfAddr" value="${esc(c.address||'')}"></div><div class="field"><label>المقاسات</label><input id="cfMeas" value="${esc(c.measurements||'')}"></div><div class="field full"><label>ملاحظات</label><textarea id="cfNotes">${esc(c.notes||'')}</textarea></div><div class="full"><button class="btn">حفظ</button></div></form>`);$('cf').onsubmit=async e=>{e.preventDefault();const p={full_name:$('cfName').value.trim(),mobile:$('cfMobile').value.trim(),national_id:$('cfNat').value.trim()||null,address:$('cfAddr').value.trim()||null,measurements:$('cfMeas').value.trim()||null,notes:$('cfNotes').value.trim()||null};if(!p.full_name||!p.mobile)return alert('الاسم والموبايل مطلوبان');const r=id?await sb.from('customers').update(p).eq('id',id).select().single():await sb.from('customers').insert(p).select().single();if(r.error)return alert(r.error.message);await audit(id?'update':'insert','customers',r.data.id);closeModal();await refreshAll()}}
 window.customerForm=customerForm;
 
-function renderBookings(){$('bookingsTable').innerHTML=table(['الإيصال','العميل','الفرع','المناسبة','الاستلام','الإرجاع','الإيجار','التأمين','المدفوع','المتبقي','الحالة','إجراء'],S.bookings.map(b=>`<tr><td>${b.receipt_no}</td><td>${esc(customerName(b.customer_id))}</td><td>${esc(branchName(b.booking_branch_id))}</td><td>${esc(b.event_date)}</td><td>${new Date(b.pickup_at).toLocaleString('ar-EG')}</td><td>${new Date(b.expected_return_at).toLocaleString('ar-EG')}</td><td>${money(b.rental_total)}</td><td>${money(b.deposit_total)}</td><td>${money(b.paid_amount)}</td><td>${money(b.balance_amount)}</td><td><span class="pill">${esc(statusAr[b.status]||b.status)}</span></td><td><div class="rowactions"><button class="btn light" onclick="bookingDetails('${b.id}')">فتح</button></div></td></tr>`).join(''))}
+function renderBookings(){
+ $('bookingsTable').innerHTML=table(
+ ['الإيصال','العميل','الفرع','المناسبة','الاستلام','الإرجاع','الإيجار','التأمين','المدفوع','المتبقي','الحالة','إجراء'],
+ S.bookings.map(b=>`<tr>
+ <td>${b.receipt_no}</td><td>${esc(customerName(b.customer_id))}</td><td>${esc(branchName(b.booking_branch_id))}</td>
+ <td>${formatDMY(b.event_date)}</td><td>${formatDMY(b.pickup_at)}</td><td>${formatDMY(b.expected_return_at)}</td>
+ <td>${money(b.rental_total)}</td><td>${money(b.deposit_total)}</td><td>${money(b.paid_amount)}</td><td>${money(b.balance_amount)}</td>
+ <td><span class="pill">${esc(statusAr[b.status]||b.status)}</span></td>
+ <td><div class="rowactions"><button class="btn light" onclick="bookingDetails('${b.id}')">فتح</button></div></td></tr>`).join(''))
+}
 function newBooking(){
  const branches=S.branches.filter(x=>x.active).map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('');
- const dress=S.dresses.filter(x=>x.status==='available').map(x=>`<option value="${x.id}" data-rent="${x.default_rental_price}" data-dep="${x.default_deposit}">${esc(x.dress_code)} — ${esc(x.name||'')} — ${esc(branchName(x.current_branch_id))}</option>`).join('');
- if(!dress)return alert('لا توجد فساتين متاحة في قاعدة الفساتين. أضف فستان أو اجعل حالته متاح أولاً.');
  openModal('حجز / إيجار جديد',`<form id="bkf">
  <h4>بيانات العميل</h4>
  <div class="forms">
@@ -180,14 +204,15 @@ function newBooking(){
    <div class="field"><label>المقاسات</label><input id="bkCustMeas" placeholder="مثال: صدر / وسط / طول"></div>
    <div class="field full"><label>ملاحظات العميل</label><textarea id="bkCustNotes"></textarea></div>
  </div>
- <h4>بيانات الحجز</h4>
+ <h4>بيانات الحجز — التاريخ: يوم / شهر / سنة</h4>
  <div class="forms">
    <div class="field"><label>الفرع</label><select id="bkBranch">${branches}</select></div>
-   <div class="field"><label>تاريخ المناسبة</label><input id="bkEvent" type="date" required></div>
-   <div class="field"><label>موعد البروفة</label><input id="bkFit" type="datetime-local"></div>
-   <div class="field"><label>موعد الاستلام</label><input id="bkPickup" type="datetime-local" required></div>
-   <div class="field"><label>موعد الإرجاع المتوقع</label><input id="bkReturn" type="datetime-local" required></div>
+   <div class="field"><label>تاريخ المناسبة</label><input id="bkEvent" inputmode="numeric" placeholder="20/09/2026" required></div>
+   <div class="field"><label>تاريخ البروفة</label><input id="bkFit" inputmode="numeric" placeholder="18/09/2026"></div>
+   <div class="field"><label>تاريخ الاستلام</label><input id="bkPickup" inputmode="numeric" placeholder="20/09/2026" required></div>
+   <div class="field"><label>تاريخ الإرجاع المتوقع</label><input id="bkReturn" inputmode="numeric" placeholder="22/09/2026" required></div>
  </div>
+ <div id="availabilityMsg" class="msg">اكتب تاريخ الاستلام والإرجاع ليظهر لك الفساتين المتاحة في هذه الفترة.</div>
  <h4>اختيار الفستان من قاعدة الفساتين</h4>
  <div id="bkItems"></div>
  <button type="button" id="addBkItem" class="btn light">+ إضافة فستان آخر للحجز</button>
@@ -201,9 +226,52 @@ function newBooking(){
  </div>
  <div class="full" style="margin-top:10px"><button class="btn">إنشاء الحجز</button></div>
  </form>`);
+
+ function bookingDates(){
+   const event=parseDMY($('bkEvent').value),fit=$('bkFit').value?parseDMY($('bkFit').value):null,pick=parseDMY($('bkPickup').value),ret=parseDMY($('bkReturn').value);
+   return {event,fit,pick,ret};
+ }
+ function dressAvailableFor(dressId,pick,ret){
+   if(!pick||!ret)return false;
+   if(['sold','inactive','maintenance'].includes(S.dresses.find(x=>x.id===dressId)?.status))return false;
+   const linked=S.bookingDresses.filter(x=>x.dress_id===dressId);
+   for(const bd of linked){
+     const b=S.bookings.find(x=>x.id===bd.booking_id);
+     if(!b||['cancelled','completed'].includes(b.status))continue;
+     const oldStart=String(b.pickup_at||'').slice(0,10),oldReturn=String(b.expected_return_at||'').slice(0,10);
+     if(!oldStart||!oldReturn)continue;
+     const blockedUntil=addDaysYMD(oldReturn,bd.prep_buffer_days||3);
+     // New pickup may start on blockedUntil itself. Conflict only while pickup is earlier.
+     const overlap=(pick < blockedUntil) && (ret >= oldStart);
+     if(overlap)return false;
+   }
+   return true;
+ }
+ function availableOptions(){
+   const {pick,ret}=bookingDates();
+   if(!pick||!ret||ret<pick)return '';
+   return S.dresses.filter(d=>dressAvailableFor(d.id,pick,ret))
+     .map(d=>`<option value="${d.id}" data-rent="${d.default_rental_price}" data-dep="${d.default_deposit}">${esc(d.dress_code)} — ${esc(d.name||'')} — ${esc(branchName(d.current_branch_id))}</option>`).join('');
+ }
+ function refreshAvailability(){
+   const {pick,ret}=bookingDates();
+   if(!pick||!ret){$('availabilityMsg').textContent='اكتب التاريخ بصيغة يوم/شهر/سنة.';return}
+   if(ret<pick){$('availabilityMsg').textContent='تاريخ الإرجاع لازم يكون بعد أو نفس تاريخ الاستلام.';return}
+   const opts=availableOptions();
+   $('availabilityMsg').innerHTML=opts?`الفساتين المتاحة للفترة من <b>${esc($('bkPickup').value)}</b> إلى <b>${esc($('bkReturn').value)}</b> جاهزة للاختيار.`:'لا توجد فساتين متاحة في الفترة المختارة.';
+   document.querySelectorAll('.itDress').forEach(s=>{
+     const old=s.value;s.innerHTML=opts;
+     if([...s.options].some(o=>o.value===old))s.value=old;
+     const item=s.closest('.bkitem');const o=s.options[s.selectedIndex];
+     if(item&&o){item.querySelector('.itRent').value=o.dataset.rent||0;item.querySelector('.itDep').value=o.dataset.dep||0}
+   });
+   calcBookingTotals();
+ }
  function addItem(){
+   const opts=availableOptions();
+   if(!opts)return alert('حدد تاريخ الاستلام والإرجاع أولاً، ولازم يكون فيه فستان متاح في الفترة.');
    const i=document.createElement('div');i.className='forms bkitem';
-   i.innerHTML=`<div class="field wide"><label>الفستان</label><select class="itDress">${dress}</select></div>
+   i.innerHTML=`<div class="field wide"><label>الفستان المتاح في الفترة</label><select class="itDress">${opts}</select></div>
    <div class="field"><label>قيمة الإيجار</label><input class="itRent" type="number" value="0"></div>
    <div class="field"><label>التأمين</label><input class="itDep" type="number" value="0"></div>
    <div class="field"><label>فرع الاستلام</label><select class="itPick">${branches}</select></div>
@@ -211,98 +279,45 @@ function newBooking(){
    <div class="field"><label>فترة تجهيز بعد الرجوع / أيام</label><input class="itBuf" type="number" value="3"></div>`;
    $('bkItems').appendChild(i);
    const s=i.querySelector('.itDress');
-   const sync=()=>{const o=s.options[s.selectedIndex];i.querySelector('.itRent').value=o?.dataset.rent||0;i.querySelector('.itDep').value=o?.dataset.dep||0};
+   const sync=()=>{const o=s.options[s.selectedIndex];i.querySelector('.itRent').value=o?.dataset.rent||0;i.querySelector('.itDep').value=o?.dataset.dep||0;calcBookingTotals()};
    s.onchange=sync;sync();
  }
- addItem();$('addBkItem').onclick=()=>{addItem();calcBookingTotals()};
  function calcBookingTotals(){
-   const items=[...document.querySelectorAll('.bkitem')].map(i=>({
-     rental:+i.querySelector('.itRent').value||0,
-     dep:+i.querySelector('.itDep').value||0
-   }));
-   const sub=items.reduce((a,x)=>a+x.rental,0);
-   const dep=items.reduce((a,x)=>a+x.dep,0);
-   const type=$('bkDiscType').value,val=+$('bkDiscVal').value||0;
-   const disc=type==='percent'?sub*val/100:type==='fixed'?Math.min(sub,val):0;
-   const rentalTotal=Math.max(0,sub-disc);
-   const grand=rentalTotal+dep;
-   const paid=Math.max(0,+$('bkPaid').value||0);
-   const balance=Math.max(0,grand-paid);
-   $('bkGrandTotal').value=grand.toFixed(2);
-   $('bkBalance').value=balance.toFixed(2);
+   const items=[...document.querySelectorAll('.bkitem')].map(i=>({rental:+i.querySelector('.itRent').value||0,dep:+i.querySelector('.itDep').value||0}));
+   const sub=items.reduce((a,x)=>a+x.rental,0),dep=items.reduce((a,x)=>a+x.dep,0);
+   const type=$('bkDiscType').value,val=+$('bkDiscVal').value||0,disc=type==='percent'?sub*val/100:type==='fixed'?Math.min(sub,val):0;
+   const grand=Math.max(0,sub-disc)+dep,paid=Math.max(0,+$('bkPaid').value||0);
+   $('bkGrandTotal').value=grand.toFixed(2);$('bkBalance').value=Math.max(0,grand-paid).toFixed(2);
  }
- $('bkItems').addEventListener('input',calcBookingTotals);
- $('bkDiscType').addEventListener('change',calcBookingTotals);
- $('bkDiscVal').addEventListener('input',calcBookingTotals);
- $('bkPaid').addEventListener('input',calcBookingTotals);
- calcBookingTotals();
+ $('bkPickup').addEventListener('input',refreshAvailability);$('bkReturn').addEventListener('input',refreshAvailability);
+ $('addBkItem').onclick=addItem;$('bkItems').addEventListener('input',calcBookingTotals);$('bkDiscType').onchange=calcBookingTotals;$('bkDiscVal').oninput=calcBookingTotals;$('bkPaid').oninput=calcBookingTotals;
 
  $('bkf').onsubmit=async e=>{
    e.preventDefault();
+   const dates=bookingDates();
+   if(!dates.event||!dates.pick||!dates.ret||($('bkFit').value&&!dates.fit))return alert('اكتب التواريخ بصيغة يوم/شهر/سنة مثل 20/09/2026');
+   if(dates.ret<dates.pick)return alert('تاريخ الإرجاع لازم يكون بعد تاريخ الاستلام');
    const full_name=$('bkCustName').value.trim(),mobile=$('bkCustMobile').value.trim();
    if(!full_name||!mobile)return alert('اسم العميل ورقم الموبايل مطلوبان');
-   const customerPayload={
-     full_name,mobile,
-     national_id:$('bkCustNat').value.trim()||null,
-     address:$('bkCustAddr').value.trim()||null,
-     measurements:$('bkCustMeas').value.trim()||null,
-     notes:$('bkCustNotes').value.trim()||null
-   };
+   const customerPayload={full_name,mobile,national_id:$('bkCustNat').value.trim()||null,address:$('bkCustAddr').value.trim()||null,measurements:$('bkCustMeas').value.trim()||null,notes:$('bkCustNotes').value.trim()||null};
    let customer=S.customers.find(c=>String(c.mobile||'').trim()===mobile);
-   if(customer){
-     const cr=await sb.from('customers').update(customerPayload).eq('id',customer.id).select().single();
-     if(cr.error)return alert('تعذر تحديث بيانات العميل: '+cr.error.message);
-     customer=cr.data;
-   }else{
-     const cr=await sb.from('customers').insert(customerPayload).select().single();
-     if(cr.error)return alert('تعذر إضافة العميل: '+cr.error.message);
-     customer=cr.data;
-     await audit('insert','customers',customer.id,{full_name,mobile});
-   }
+   if(customer){const cr=await sb.from('customers').update(customerPayload).eq('id',customer.id).select().single();if(cr.error)return alert(cr.error.message);customer=cr.data}
+   else{const cr=await sb.from('customers').insert(customerPayload).select().single();if(cr.error)return alert(cr.error.message);customer=cr.data;await audit('insert','customers',customer.id,{full_name,mobile})}
 
-   const items=[...document.querySelectorAll('.bkitem')].map(i=>({
-     dress_id:i.querySelector('.itDress').value,
-     rental_price:+i.querySelector('.itRent').value||0,
-     deposit_amount:+i.querySelector('.itDep').value||0,
-     pickup_branch_id:+i.querySelector('.itPick').value,
-     return_branch_id:+i.querySelector('.itRet').value,
-     prep_buffer_days:+i.querySelector('.itBuf').value||3
-   })).filter(x=>x.dress_id);
+   const items=[...document.querySelectorAll('.bkitem')].map(i=>({dress_id:i.querySelector('.itDress').value,rental_price:+i.querySelector('.itRent').value||0,deposit_amount:+i.querySelector('.itDep').value||0,pickup_branch_id:+i.querySelector('.itPick').value,return_branch_id:+i.querySelector('.itRet').value,prep_buffer_days:+i.querySelector('.itBuf').value||3})).filter(x=>x.dress_id);
    if(!items.length)return alert('اختر فستاناً من قاعدة الفساتين');
    if(new Set(items.map(x=>x.dress_id)).size!==items.length)return alert('لا يمكن اختيار نفس الفستان مرتين في نفس الحجز');
+   if(items.some(x=>!dressAvailableFor(x.dress_id,dates.pick,dates.ret)))return alert('أحد الفساتين لم يعد متاحاً في الفترة المختارة. حدّث الاختيار.');
 
-   const sub=items.reduce((a,x)=>a+x.rental_price,0),dep=items.reduce((a,x)=>a+x.deposit_amount,0);
-   const type=$('bkDiscType').value,val=+$('bkDiscVal').value||0;
-   const disc=type==='percent'?sub*val/100:type==='fixed'?Math.min(sub,val):0,total=Math.max(0,sub-disc);
-   const grandTotal=total+dep;
-   const paidNow=Math.max(0,+$('bkPaid').value||0);
+   const sub=items.reduce((a,x)=>a+x.rental_price,0),dep=items.reduce((a,x)=>a+x.deposit_amount,0),type=$('bkDiscType').value,val=+$('bkDiscVal').value||0;
+   const disc=type==='percent'?sub*val/100:type==='fixed'?Math.min(sub,val):0,total=Math.max(0,sub-disc),grandTotal=total+dep,paidNow=Math.max(0,+$('bkPaid').value||0);
    if(paidNow>grandTotal)return alert('المبلغ المدفوع لا يمكن أن يكون أكبر من إجمالي المطلوب');
-   const balanceNow=Math.max(0,grandTotal-paidNow);
-   const b={
-     customer_id:customer.id,booking_branch_id:+$('bkBranch').value,event_date:$('bkEvent').value,
-     fitting_at:$('bkFit').value?new Date($('bkFit').value).toISOString():null,
-     pickup_at:new Date($('bkPickup').value).toISOString(),
-     expected_return_at:new Date($('bkReturn').value).toISOString(),
-     discount_enabled:!!type,discount_type:type||null,discount_value:val,
-     rental_subtotal:sub,discount_amount:disc,rental_total:total,deposit_total:dep,
-     paid_amount:paidNow,balance_amount:balanceNow,status:'reserved',notes:$('bkNotes').value.trim()||null
-   };
-   const r=await sb.from('bookings').insert(b).select().single();
-   if(r.error)return alert(r.error.message);
+   const balanceNow=grandTotal-paidNow;
+   const b={customer_id:customer.id,booking_branch_id:+$('bkBranch').value,event_date:dates.event,fitting_at:dates.fit?dateOnlyIso(dates.fit):null,pickup_at:dateOnlyIso(dates.pick),expected_return_at:dateOnlyIso(dates.ret),discount_enabled:!!type,discount_type:type||null,discount_value:val,rental_subtotal:sub,discount_amount:disc,rental_total:total,deposit_total:dep,paid_amount:paidNow,balance_amount:balanceNow,status:'reserved',notes:$('bkNotes').value.trim()||null};
+   const r=await sb.from('bookings').insert(b).select().single();if(r.error)return alert(r.error.message);
    const r2=await sb.from('booking_dresses').insert(items.map(x=>({...x,booking_id:r.data.id}))).select();
    if(r2.error){await sb.from('bookings').delete().eq('id',r.data.id);return alert(r2.error.message)}
-   await sb.from('dresses').update({status:'booked'}).in('id',items.map(x=>x.dress_id));
-   if(paidNow>0){
-     const pr=await sb.from('payments').insert({
-       booking_id:r.data.id,
-       branch_id:+$('bkBranch').value,
-       amount:paidNow,
-       payment_type:'rental',
-       payment_method:'عند الحجز',
-       notes:'دفعة عند إنشاء الحجز'
-     });
-     if(pr.error)console.warn('تعذر تسجيل دفعة الحجز:',pr.error.message);
-   }
+   if(paidNow>0)await sb.from('payments').insert({booking_id:r.data.id,branch_id:+$('bkBranch').value,amount:paidNow,payment_type:'rental',payment_method:'عند الحجز',notes:'دفعة عند إنشاء الحجز'});
    await audit('insert','bookings',r.data.id,{receipt_no:r.data.receipt_no,customer_id:customer.id,paid_amount:paidNow,balance_amount:balanceNow});
    closeModal();await refreshAll();
  }
@@ -310,15 +325,26 @@ function newBooking(){
 window.newBooking=newBooking;
 function bookingDetails(id){
  const b=S.bookings.find(x=>x.id===id),items=S.bookingDresses.filter(x=>x.booking_id===id),c=S.customers.find(x=>x.id===b.customer_id);
+ const refundDue=Math.max(0,Number(b.deposit_total||0)-Number(b.deposit_damage_deduction||0)-Number(b.deposit_refunded||0));
  openModal('الحجز رقم '+b.receipt_no,`
- <div class="card" style="margin-bottom:12px"><b>العميل:</b> ${esc(c?.full_name||'—')} — <b>الموبايل:</b> ${esc(c?.mobile||'—')} ${c?.measurements?`— <b>المقاسات:</b> ${esc(c.measurements)}`:''}</div>
- <div class="grid"><div class="card stat"><small>الإيجار</small><strong>${money(b.rental_total)}</strong></div><div class="card stat"><small>التأمين</small><strong>${money(b.deposit_total)}</strong></div><div class="card stat"><small>المدفوع</small><strong>${money(b.paid_amount)}</strong></div><div class="card stat"><small>المتبقي</small><strong>${money(b.balance_amount)}</strong></div></div>
+ <div class="card" style="margin-bottom:12px"><b>العميل:</b> ${esc(c?.full_name||'—')} — <b>الموبايل:</b> ${esc(c?.mobile||'—')}</div>
+ <div class="card" style="margin-bottom:12px"><b>المناسبة:</b> ${formatDMY(b.event_date)} — <b>البروفة:</b> ${formatDMY(b.fitting_at)} — <b>الاستلام:</b> ${formatDMY(b.pickup_at)} — <b>الإرجاع:</b> ${formatDMY(b.expected_return_at)}</div>
+ <div class="grid">
+  <div class="card stat"><small>الإيجار</small><strong>${money(b.rental_total)}</strong></div>
+  <div class="card stat"><small>التأمين</small><strong>${money(b.deposit_total)}</strong></div>
+  <div class="card stat"><small>المدفوع</small><strong>${money(b.paid_amount)}</strong></div>
+  <div class="card stat"><small>المتبقي على الحجز</small><strong>${money(b.balance_amount)}</strong></div>
+  <div class="card stat"><small>خصم من التأمين</small><strong>${money(b.deposit_damage_deduction)}</strong></div>
+  <div class="card stat"><small>تأمين تم رده</small><strong>${money(b.deposit_refunded)}</strong></div>
+  <div class="card stat"><small>تأمين باقي للرد</small><strong>${money(refundDue)}</strong></div>
+ </div>
+ ${b.deposit_damage_reason?`<div class="msg"><b>سبب خصم التأمين:</b> ${esc(b.deposit_damage_reason)}</div>`:''}
  <div style="margin-top:12px">${table(['الفستان','الإيجار','التأمين','استلام','إرجاع'],items.map(x=>`<tr><td>${esc(dressName(x.dress_id))}</td><td>${money(x.rental_price)}</td><td>${money(x.deposit_amount)}</td><td>${esc(branchName(x.pickup_branch_id))}</td><td>${esc(branchName(x.return_branch_id))}</td></tr>`).join(''))}</div>
  <div class="toolbar" style="margin-top:12px">
    <button class="btn" onclick="setBookingStatus('${id}','confirmed')">تأكيد الحجز</button>
    <button class="btn light" onclick="startFittingPrep('${id}')">تمت البروفة ← ابدأ التجهيز</button>
    <button class="btn" onclick="setBookingStatus('${id}','picked_up')">تم استلام الفستان</button>
-   <button class="btn" onclick="returnBooking('${id}')">رجوع الفستان ← تنظيف وتجهيز</button>
+   <button class="btn" onclick="returnBooking('${id}')">رجوع الفستان وتسوية التأمين</button>
    <button class="btn alt" onclick="setBookingStatus('${id}','completed')">إكمال</button>
    <button class="btn danger" onclick="setBookingStatus('${id}','cancelled')">إلغاء</button>
  </div>`)
@@ -360,11 +386,65 @@ async function startFittingPrep(id){
 window.startFittingPrep=startFittingPrep;
 
 async function returnBooking(id){
- const r=await sb.from('bookings').update({status:'returned',actual_return_at:new Date().toISOString()}).eq('id',id);
- if(r.error)return alert(r.error.message);
- await createPrepWorkflow(id,'return');
- await audit('return','bookings',id);
- closeModal();await refreshAll();
+ const b=S.bookings.find(x=>x.id===id);
+ if(!b)return;
+ const existingDed=Number(b.deposit_damage_deduction||0),existingRefund=Number(b.deposit_refunded||0);
+ const maxRefund=Math.max(0,Number(b.deposit_total||0)-existingDed-existingRefund);
+ openModal('رجوع الفستان وتسوية التأمين',`
+ <form id="returnForm">
+  <div class="grid">
+   <div class="card stat"><small>قيمة التأمين بالحجز</small><strong>${money(b.deposit_total)}</strong></div>
+   <div class="card stat"><small>خصم سابق</small><strong>${money(existingDed)}</strong></div>
+   <div class="card stat"><small>تم رده سابقاً</small><strong>${money(existingRefund)}</strong></div>
+   <div class="card stat"><small>المتاح حالياً للرد</small><strong id="returnableView">${money(maxRefund)}</strong></div>
+  </div>
+  <div class="forms" style="margin-top:12px">
+   <div class="field"><label>خصم من التأمين بسبب تلف / تنظيف / إصلاح</label><input id="damageDed" type="number" min="0" value="${existingDed}"></div>
+   <div class="field wide"><label>سبب الخصم</label><input id="damageReason" value="${esc(b.deposit_damage_reason||'')}" placeholder="مثال: تلف سوستة / بقعة تحتاج تنظيف خاص"></div>
+   <div class="field"><label>المبلغ المسترد للعميل الآن</label><input id="refundNow" type="number" min="0" value="${maxRefund}"></div>
+   <div class="field"><label>هل تم رد التأمين الآن؟</label><select id="refundDone"><option value="yes">نعم - خرج من الخزينة</option><option value="no">لا - لم يستلمه بعد</option></select></div>
+  </div>
+  <div id="returnCalc" class="msg"></div>
+  <button class="btn">تأكيد رجوع الفستان</button>
+ </form>`);
+ function calcReturn(){
+   const ded=Math.max(0,+$('damageDed').value||0);
+   const refundable=Math.max(0,Number(b.deposit_total||0)-ded-existingRefund);
+   if(+$('refundNow').value>refundable)$('refundNow').value=refundable.toFixed(2);
+   $('returnableView').textContent=money(refundable);
+   $('returnCalc').innerHTML=`التأمين: <b>${money(b.deposit_total)}</b> — الخصم: <b>${money(ded)}</b> — الباقي المستحق للعميل: <b>${money(refundable)}</b>`;
+ }
+ $('damageDed').oninput=calcReturn;calcReturn();
+ $('returnForm').onsubmit=async e=>{
+   e.preventDefault();
+   const ded=Math.max(0,+$('damageDed').value||0),reason=$('damageReason').value.trim()||null,done=$('refundDone').value==='yes';
+   const refundable=Math.max(0,Number(b.deposit_total||0)-ded-existingRefund);
+   let refundNow=Math.max(0,+$('refundNow').value||0);
+   if(refundNow>refundable)return alert('المبلغ المسترد أكبر من التأمين المستحق');
+   if(!done)refundNow=0;
+   if(ded>Number(b.deposit_total||0))return alert('خصم التأمين لا يمكن أن يتجاوز قيمة التأمين');
+   if(ded>0&&!reason)return alert('اكتب سبب خصم التأمين');
+
+   const up={status:'returned',actual_return_at:new Date().toISOString(),deposit_damage_deduction:ded,deposit_damage_reason:reason,deposit_refunded:existingRefund+refundNow};
+   const r=await sb.from('bookings').update(up).eq('id',id);if(r.error)return alert(r.error.message);
+
+   if(refundNow>0){
+     const pr=await sb.from('payments').insert({
+       booking_id:id,branch_id:b.booking_branch_id,amount:refundNow,payment_type:'deposit_refund',
+       payment_method:'رد تأمين',notes:reason?`رد تأمين بعد خصم: ${reason}`:'رد تأمين للعميل'
+     });
+     if(pr.error)return alert('تم رجوع الفستان لكن تعذر تسجيل خروج التأمين من المالية: '+pr.error.message);
+   }
+   if(ded>0){
+     await sb.from('payments').insert({
+       booking_id:id,branch_id:b.booking_branch_id,amount:ded,payment_type:'damage_deduction',
+       payment_method:'خصم من التأمين',notes:reason
+     });
+   }
+   await createPrepWorkflow(id,'return');
+   await audit('return','bookings',id,{deposit: b.deposit_total,deduction:ded,reason,refund_now:refundNow});
+   closeModal();await refreshAll();
+ }
 }
 window.returnBooking=returnBooking;
 
@@ -406,8 +486,9 @@ window.newBranch=newBranch;window.toggleBranch=async(id,v)=>{const r=await sb.fr
 
 function renderFinance(){
  const income=S.payments.filter(x=>x.payment_type!=='deposit_refund').reduce((a,x)=>a+Number(x.amount||0),0),refund=S.payments.filter(x=>x.payment_type==='deposit_refund').reduce((a,x)=>a+Number(x.amount||0),0),exp=S.expenses.reduce((a,x)=>a+Number(x.amount||0),0),dexp=S.dressExpenses.reduce((a,x)=>a+Number(x.amount||0),0),sales=S.sales.reduce((a,x)=>a+Number(x.sale_amount||0),0);
- $('financeStats').innerHTML=[['التحصيلات',money(income)],['رد التأمينات',money(refund)],['مصروفات عامة',money(exp)],['مصروفات فساتين',money(dexp)],['المبيعات',money(sales)]].map(x=>`<div class="card stat"><small>${x[0]}</small><strong>${x[1]}</strong></div>`).join('');
- $('paymentsTable').innerHTML=table(['التاريخ','الفرع','النوع','القيمة','طريقة الدفع','الحجز'],S.payments.map(x=>`<tr><td>${new Date(x.paid_at).toLocaleString('ar-EG')}</td><td>${esc(branchName(x.branch_id))}</td><td>${esc(x.payment_type)}</td><td>${money(x.amount)}</td><td>${esc(x.payment_method||'')}</td><td>${esc(S.bookings.find(b=>b.id===x.booking_id)?.receipt_no||'')}</td></tr>`).join(''));
+ const netCash=income+sales-refund-exp-dexp;
+ $('financeStats').innerHTML=[['التحصيلات',money(income)],['رد التأمينات',money(refund)],['مصروفات عامة',money(exp)],['مصروفات فساتين',money(dexp)],['المبيعات',money(sales)],['صافي الحركة المالية',money(netCash)]].map(x=>`<div class="card stat"><small>${x[0]}</small><strong>${x[1]}</strong></div>`).join('');
+ $('paymentsTable').innerHTML=table(['التاريخ','الفرع','النوع','القيمة','طريقة الدفع','الحجز'],S.payments.map(x=>`<tr><td>${new Date(x.paid_at).toLocaleString('ar-EG')}</td><td>${esc(branchName(x.branch_id))}</td><td>${esc({rental:'تحصيل إيجار/حجز',deposit:'تحصيل تأمين',deposit_refund:'رد تأمين للعميل',damage_deduction:'خصم من التأمين',sale:'بيع',other:'أخرى'}[x.payment_type]||x.payment_type)}</td><td>${money(x.amount)}</td><td>${esc(x.payment_method||'')}</td><td>${esc(S.bookings.find(b=>b.id===x.booking_id)?.receipt_no||'')}</td></tr>`).join(''));
  $('expensesTable').innerHTML=table(['التاريخ','الفرع','البند','القيمة','البيان'],S.expenses.map(x=>`<tr><td>${x.expense_date}</td><td>${esc(branchName(x.branch_id))}</td><td>${esc(x.category)}</td><td>${money(x.amount)}</td><td>${esc(x.description||'')}</td></tr>`).join(''));
  $('dressExpensesTable').innerHTML=table(['التاريخ','الفستان','الفرع','النوع','القيمة','ملاحظات'],S.dressExpenses.map(x=>`<tr><td>${x.expense_date}</td><td>${esc(dressName(x.dress_id))}</td><td>${esc(branchName(x.branch_id))}</td><td>${esc(x.expense_type)}</td><td>${money(x.amount)}</td><td>${esc(x.notes||'')}</td></tr>`).join(''));
  $('salesTable').innerHTML=table(['التاريخ','الفستان','العميل','الفرع','قيمة البيع','المدفوع'],S.sales.map(x=>`<tr><td>${new Date(x.sold_at).toLocaleString('ar-EG')}</td><td>${esc(dressName(x.dress_id))}</td><td>${esc(customerName(x.customer_id))}</td><td>${esc(branchName(x.branch_id))}</td><td>${money(x.sale_amount)}</td><td>${money(x.paid_amount)}</td></tr>`).join(''));
