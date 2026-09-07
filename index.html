@@ -537,7 +537,7 @@ function renderPrep(){
    const rows=S.prep.filter(p=>String(p.stage_name||'')===current);
    $('prepTable').innerHTML=table(['الفستان','الحجز','الحالة','المسؤول','بدأ','اكتمل','ملاحظات','إجراء'],rows.map(p=>{
      const bd=S.bookingDresses.find(x=>x.id===p.booking_dress_id),b=S.bookings.find(x=>x.id===bd?.booking_id);
-     return `<tr><td>${esc(dressName(bd?.dress_id))}</td><td>${esc(b?.receipt_no||'')}</td><td>${esc(statusAr[p.status]||p.status)}</td><td>${esc(p.responsible_name||'')}</td><td>${p.started_at?formatDMY(p.started_at):'—'}</td><td>${p.completed_at?formatDMY(p.completed_at):'—'}</td><td>${esc(p.notes||'')}</td><td><button class="btn light" onclick="prepAction('${p.id}')">تحديث</button></td></tr>`).join(''));
+     return `<tr><td>${esc(dressName(bd?.dress_id))}</td><td>${esc(b?.receipt_no||'')}</td><td>${esc(statusAr[p.status]||p.status)}</td><td>${esc(p.responsible_name||'')}</td><td>${p.started_at?formatDMY(p.started_at):'—'}</td><td>${p.completed_at?formatDMY(p.completed_at):'—'}</td><td>${esc(p.notes||'')}</td><td><button class="btn light" onclick="prepAction('${p.id}')">تحديث</button></td></tr>`}).join(''));
  }
  document.querySelectorAll('#prepNav button').forEach(b=>b.onclick=()=>{current=b.dataset.prep;$('prepNav').dataset.current=current;document.querySelectorAll('#prepNav button').forEach(x=>x.classList.toggle('tabactive',x===b));draw()});
  draw();
