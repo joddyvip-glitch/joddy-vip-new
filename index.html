@@ -320,7 +320,7 @@ function renderBookings(){
  <td>${formatDMY(b.event_date)}</td><td>${formatDMY(b.pickup_at)}</td><td>${formatDMY(b.expected_return_at)}</td>
  <td>${money(b.rental_total)}</td><td>${money(b.deposit_total)}</td><td>${money(b.paid_amount)}</td><td>${money(b.balance_amount)}</td>
  <td><span class="pill">${esc(statusAr[b.status]||b.status)}</span></td>
- <td><div class="rowactions"><button class="btn light" onclick="bookingDetails('${b.id}')">فتح</button></div></td></tr>`).join(''))
+ <td><div class="rowactions"><button class="btn light" onclick="bookingDetails('${b.id}')">فتح</button>${roleCanManage()?`<button class="btn light" onclick="editBooking('${b.id}')">تعديل</button><button class="btn danger" onclick="deleteBooking('${b.id}')">حذف</button>`:''}</div></td></tr>`).join(''))
 }
 function newBooking(){
  const branches=S.branches.filter(x=>x.active).map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('');
@@ -460,6 +460,68 @@ function newBooking(){
  }
 }
 window.newBooking=newBooking;
+
+function editBooking(id){
+ if(!roleCanManage())return alert('هذه الصلاحية متاحة لمالك النظام أو المدير فقط');
+ const b=S.bookings.find(x=>x.id===id);if(!b)return;
+ const items=S.bookingDresses.filter(x=>x.booking_id===id);
+ const subtotal=items.reduce((a,x)=>a+Number(x.rental_price||0),0);
+ const deposit=items.reduce((a,x)=>a+Number(x.deposit_amount||0),0);
+ openModal('تعديل الحجز رقم '+b.receipt_no,`<form id="editBkForm" class="forms">
+  <div class="field"><label>الفرع</label><select id="editBkBranch">${S.branches.map(x=>`<option value="${x.id}" ${x.id===b.booking_branch_id?'selected':''}>${esc(x.name)}</option>`).join('')}</select></div>
+  <div class="field"><label>تاريخ المناسبة</label><input id="editBkEvent" value="${formatDMY(b.event_date)}" required></div>
+  <div class="field"><label>تاريخ البروفة</label><input id="editBkFit" value="${formatDMY(b.fitting_at)}"></div>
+  <div class="field"><label>تاريخ الاستلام</label><input id="editBkPickup" value="${formatDMY(b.pickup_at)}" required></div>
+  <div class="field"><label>تاريخ الإرجاع المتوقع</label><input id="editBkReturn" value="${formatDMY(b.expected_return_at)}" required></div>
+  <div class="field"><label>نوع الخصم</label><select id="editBkDiscType"><option value="" ${!b.discount_type?'selected':''}>بدون</option><option value="percent" ${b.discount_type==='percent'?'selected':''}>نسبة %</option><option value="fixed" ${b.discount_type==='fixed'?'selected':''}>قيمة ثابتة</option></select></div>
+  <div class="field"><label>قيمة الخصم</label><input id="editBkDiscVal" type="number" min="0" value="${Number(b.discount_value||0)}"></div>
+  <div class="field"><label>إيجار الفساتين قبل الخصم</label><input value="${subtotal}" disabled></div>
+  <div class="field"><label>إجمالي التأمين</label><input value="${deposit}" disabled></div>
+  <div class="field full"><label>ملاحظات الحجز</label><textarea id="editBkNotes">${esc(b.notes||'')}</textarea></div>
+  <div class="full"><button class="btn">حفظ التعديل</button></div>
+ </form>`);
+ $('editBkForm').onsubmit=async e=>{
+  e.preventDefault();
+  const event=parseDMY($('editBkEvent').value),fit=$('editBkFit').value?parseDMY($('editBkFit').value):null,pick=parseDMY($('editBkPickup').value),ret=parseDMY($('editBkReturn').value);
+  if(!event||!pick||!ret||($('editBkFit').value&&!fit))return alert('اكتب التواريخ بصيغة يوم/شهر/سنة');
+  if(ret<=pick)return alert('تاريخ الإرجاع لازم يكون بعد تاريخ الاستلام بيوم على الأقل');
+  for(const it of items){
+   const {data,error}=await sb.rpc('dress_is_available',{p_dress_id:it.dress_id,p_pickup:pick,p_return:ret,p_buffer:it.prep_buffer_days||3,p_exclude_booking:id});
+   if(error||!data)return alert('الفستان '+dressName(it.dress_id)+' غير متاح في الموعد الجديد');
+  }
+  const type=$('editBkDiscType').value,val=Math.max(0,+$('editBkDiscVal').value||0);
+  const disc=type==='percent'?Math.min(subtotal,subtotal*val/100):type==='fixed'?Math.min(subtotal,val):0;
+  const rentalTotal=Math.max(0,subtotal-disc),balance=Math.max(0,rentalTotal+deposit-Number(b.paid_amount||0));
+  const payload={booking_branch_id:+$('editBkBranch').value,event_date:event,fitting_at:fit?dateOnlyIso(fit):null,pickup_at:dateOnlyIso(pick),expected_return_at:dateOnlyIso(ret),discount_enabled:!!type,discount_type:type||null,discount_value:val,rental_subtotal:subtotal,discount_amount:disc,rental_total:rentalTotal,deposit_total:deposit,balance_amount:balance,notes:$('editBkNotes').value.trim()||null};
+  const r=await sb.from('bookings').update(payload).eq('id',id).select().single();if(r.error)return alert(r.error.message);
+  await audit('update','bookings',id,{receipt_no:b.receipt_no,changed:payload});closeModal();await refreshAll();
+ }
+}
+window.editBooking=editBooking;
+
+async function deleteBooking(id){
+ if(!roleCanManage())return alert('هذه الصلاحية متاحة لمالك النظام أو المدير فقط');
+ const b=S.bookings.find(x=>x.id===id);if(!b)return;
+ if(!confirm('سيتم حذف الحجز رقم '+b.receipt_no+' نهائياً مع المدفوعات والتجهيزات والتعديلات والقياسات المرتبطة به. هل أنت متأكد؟'))return;
+ if(!confirm('تأكيد أخير: لا يمكن التراجع عن حذف هذا الحجز.'))return;
+ const items=S.bookingDresses.filter(x=>x.booking_id===id),itemIds=items.map(x=>x.id),dressIds=items.map(x=>x.dress_id);
+ const remove=async(table,apply)=>{let q=sb.from(table).delete();q=apply(q);const r=await q;if(r.error)throw new Error(r.error.message)};
+ try{
+  if(itemIds.length){
+   await remove('preparation_tasks',q=>q.in('booking_dress_id',itemIds));
+   await remove('alterations',q=>q.in('booking_dress_id',itemIds));
+  }
+  await remove('customer_measurements',q=>q.eq('booking_id',id));
+  await remove('payments',q=>q.eq('booking_id',id));
+  await remove('booking_dresses',q=>q.eq('booking_id',id));
+  await remove('bookings',q=>q.eq('id',id));
+  if(dressIds.length)await sb.from('dresses').update({status:'available'}).in('id',dressIds);
+  await audit('delete','bookings',id,{receipt_no:b.receipt_no,deleted_related_records:true});
+  closeModal();await refreshAll();
+ }catch(err){alert('تعذر حذف الحجز بالكامل: '+err.message+' — لم يتم إخفاء الخطأ، راجع سجل التغييرات.');await refreshAll()}
+}
+window.deleteBooking=deleteBooking;
+
 function bookingDetails(id){
  const b=S.bookings.find(x=>x.id===id),items=S.bookingDresses.filter(x=>x.booking_id===id),c=S.customers.find(x=>x.id===b.customer_id);
  const refundDue=Math.max(0,Number(b.deposit_total||0)-Number(b.deposit_damage_deduction||0)-Number(b.deposit_refunded||0));
@@ -469,7 +531,8 @@ function bookingDetails(id){
  else if(b.status==='confirmed')actions=`<button class="btn" onclick="measurementForm('${b.customer_id}','${id}')">تسجيل قياسات البروفة</button><button class="btn light" onclick="startFittingPrep('${id}')">تمت البروفة وابدأ التجهيز</button><button class="btn" onclick="setBookingStatus('${id}','picked_up')">تم استلام الفستان</button><button class="btn danger" onclick="markNoShow('${id}')">No Show</button>`;
  else if(b.status==='picked_up')actions=`<button class="btn" onclick="returnBooking('${id}')">رجوع الفستان وتسوية التأمين</button>${late?`<button class="btn danger" onclick="delayFeeForm('${id}')">تسجيل غرامة تأخير</button>`:''}`;
  else if(b.status==='returned')actions=`<button class="btn alt" onclick="setBookingStatus('${id}','completed')">إكمال الحجز بعد انتهاء التجهيز</button>`;
- openModal('الحجز رقم '+b.receipt_no,`${late?'<div class="msg err"><b>متأخر عن موعد الإرجاع</b></div>':''}<div class="card" style="margin-bottom:12px"><b>العميل:</b> ${esc(c?.full_name||'—')} — <b>الموبايل:</b> ${esc(c?.mobile||'—')} ${c?.blocked?'— <span class="pill bad">عميل محظور</span>':''}</div><div class="card" style="margin-bottom:12px"><b>المناسبة:</b> ${formatDMY(b.event_date)} — <b>البروفة:</b> ${formatDMY(b.fitting_at)} — <b>الاستلام:</b> ${formatDMY(b.pickup_at)} — <b>الإرجاع:</b> ${formatDMY(b.expected_return_at)}</div><div class="grid"><div class="card stat"><small>الإيجار</small><strong>${money(b.rental_total)}</strong></div><div class="card stat"><small>غرامة تأخير</small><strong>${money(b.delay_fee)}</strong></div><div class="card stat"><small>التأمين</small><strong>${money(b.deposit_total)}</strong></div><div class="card stat"><small>المدفوع</small><strong>${money(b.paid_amount)}</strong></div><div class="card stat"><small>المتبقي</small><strong>${money(b.balance_amount)}</strong></div><div class="card stat"><small>تأمين باقي للرد</small><strong>${money(refundDue)}</strong></div></div>${b.cancellation_reason?`<div class="msg"><b>سبب الإلغاء/No Show:</b> ${esc(b.cancellation_reason)}</div>`:''}<div style="margin-top:12px">${table(['الفستان','الإيجار','التأمين','إجراء'],items.map(x=>`<tr><td>${esc(dressName(x.dress_id))}</td><td>${money(x.rental_price)}</td><td>${money(x.deposit_amount)}</td><td><button class="btn light" onclick="alterationForm('${x.id}')">تعديلات/خياطة</button></td></tr>`).join(''))}</div><div class="toolbar" style="margin-top:12px">${actions}</div>`)
+ const manageActions=roleCanManage()?`<button class="btn light" onclick="editBooking('${id}')">تعديل الحجز</button><button class="btn danger" onclick="deleteBooking('${id}')">حذف الحجز</button>`:'';
+ openModal('الحجز رقم '+b.receipt_no,`${late?'<div class="msg err"><b>متأخر عن موعد الإرجاع</b></div>':''}<div class="card" style="margin-bottom:12px"><b>العميل:</b> ${esc(c?.full_name||'—')} — <b>الموبايل:</b> ${esc(c?.mobile||'—')} ${c?.blocked?'— <span class="pill bad">عميل محظور</span>':''}</div><div class="card" style="margin-bottom:12px"><b>المناسبة:</b> ${formatDMY(b.event_date)} — <b>البروفة:</b> ${formatDMY(b.fitting_at)} — <b>الاستلام:</b> ${formatDMY(b.pickup_at)} — <b>الإرجاع:</b> ${formatDMY(b.expected_return_at)}</div><div class="grid"><div class="card stat"><small>الإيجار</small><strong>${money(b.rental_total)}</strong></div><div class="card stat"><small>غرامة تأخير</small><strong>${money(b.delay_fee)}</strong></div><div class="card stat"><small>التأمين</small><strong>${money(b.deposit_total)}</strong></div><div class="card stat"><small>المدفوع</small><strong>${money(b.paid_amount)}</strong></div><div class="card stat"><small>المتبقي</small><strong>${money(b.balance_amount)}</strong></div><div class="card stat"><small>تأمين باقي للرد</small><strong>${money(refundDue)}</strong></div></div>${b.cancellation_reason?`<div class="msg"><b>سبب الإلغاء/No Show:</b> ${esc(b.cancellation_reason)}</div>`:''}<div style="margin-top:12px">${table(['الفستان','الإيجار','التأمين','إجراء'],items.map(x=>`<tr><td>${esc(dressName(x.dress_id))}</td><td>${money(x.rental_price)}</td><td>${money(x.deposit_amount)}</td><td><button class="btn light" onclick="alterationForm('${x.id}')">تعديلات/خياطة</button></td></tr>`).join(''))}</div><div class="toolbar" style="margin-top:12px">${actions}${manageActions}</div>`)
 }
 window.bookingDetails=bookingDetails;
 
